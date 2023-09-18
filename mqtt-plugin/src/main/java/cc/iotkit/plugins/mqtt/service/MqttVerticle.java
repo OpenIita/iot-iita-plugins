@@ -34,6 +34,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.mqtt.*;
 import io.vertx.mqtt.messages.codes.MqttSubAckReasonCode;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -52,6 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
+@Data
 public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoint> {
 
     private MqttServer mqttServer;
@@ -61,7 +63,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
      */
     private static final Map<String, Boolean> MQTT_CONNECT_POOL = new ConcurrentHashMap<>();
 
-    @Autowired
     private MqttConfig config;
 
     @Autowired

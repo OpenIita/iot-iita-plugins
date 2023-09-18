@@ -9,26 +9,14 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>http-plugin</artifactId>
-    <version>1.0.0</version>
+    <artifactId>modbus-plugin</artifactId>
 
     <dependencies>
 
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-web</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>com.digitalpetri.modbus</groupId>
+            <artifactId>modbus-master-tcp</artifactId>
+            <version>1.2.0</version>
         </dependency>
 
     </dependencies>
@@ -60,11 +48,11 @@
                 <configuration>
                     <mode>${plugin.build.mode}</mode>
                     <pluginInfo>
-                        <id>http-plugin</id>
-                        <bootstrapClass>cc.iotkit.plugins.http.Application</bootstrapClass>
+                        <id>modbus-plugin</id>
+                        <bootstrapClass>cc.iotkit.plugins.modbus.Application</bootstrapClass>
                         <version>${project.version}</version>
                         <provider>iita</provider>
-                        <description>http示例插件，配置参数：端口(port)默认9081</description>
+                        <description>modbus示例插件</description>
                         <configFileName>application.yml</configFileName>
                     </pluginInfo>
                     <prodConfig>

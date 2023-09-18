@@ -29,6 +29,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,9 +47,9 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
+@Data
 public class HttpVerticle extends AbstractVerticle implements Handler<RoutingContext> {
 
-    @Autowired
     private HttpConfig config;
 
     @Autowired
@@ -60,9 +61,11 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
 
     private static final Set<String> DEVICE_ONLINE = new HashSet<>();
 
+    private HttpServer httpServer;
+
     @Override
     public void start() {
-        HttpServer httpServer = vertx.createHttpServer();
+        httpServer = vertx.createHttpServer();
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create()).handler(this);
         httpServer.requestHandler(router).listen(config.getPort(), ar -> {
@@ -72,6 +75,11 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
                 log.error("Error on starting the server", ar.cause());
             }
         });
+    }
+
+    @Override
+    public void stop() throws Exception {
+        httpServer.close((r) -> log.info("http server close result:{}", r.succeeded()));
     }
 
     @Override

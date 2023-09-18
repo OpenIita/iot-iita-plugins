@@ -6,6 +6,7 @@
     <modules>
         <module>mqtt-plugin</module>
         <module>http-plugin</module>
+        <module>modbus-plugin</module>
     </modules>
 
     <parent>

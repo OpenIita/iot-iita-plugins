@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.mqtt.service;
+package cc.iotkit.plugins.modbus.service;
 
 import cc.iotkit.model.device.DeviceInfo;
 import cc.iotkit.model.product.Product;

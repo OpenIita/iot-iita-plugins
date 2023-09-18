@@ -66,13 +66,13 @@
                     <pluginInfo>
                         <id>mqtt-plugin</id>
                         <bootstrapClass>cc.iotkit.plugins.mqtt.Application</bootstrapClass>
-                        <version>1.0.0</version>
+                        <version>${project.version}</version>
                         <provider>iita</provider>
                         <description>mqtt示例插件</description>
                         <configFileName>application.yml</configFileName>
                     </pluginInfo>
                     <prodConfig>
-                        <packageType>jar-outer</packageType>
+                        <packageType>jar</packageType>
                     </prodConfig>
                 </configuration>
                 <executions>
