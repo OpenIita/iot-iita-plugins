@@ -1,6 +1,5 @@
 package cc.iotkit.plugins.mqtt.service;
 
-import cc.iotkit.common.utils.JsonUtils;
 import cc.iotkit.plugin.core.IPlugin;
 import cc.iotkit.plugin.core.IPluginConfig;
 import cc.iotkit.plugins.mqtt.conf.MqttConfig;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author sjg
@@ -40,7 +38,6 @@ public class MqttPlugin implements PluginCloseListener, IPlugin {
     private IPluginConfig pluginConfig;
 
     private Vertx vertx;
-    private CountDownLatch countDownLatch;
     private String deployedId;
 
     @PostConstruct
@@ -49,23 +46,19 @@ public class MqttPlugin implements PluginCloseListener, IPlugin {
         try {
             //获取插件最新配置替换当前配置
             Map<String, Object> config = pluginConfig.getConfig(pluginInfo.getPluginId());
-            BeanUtil.copyProperties(config,mqttConfig, CopyOptions.create().ignoreNullValue());
+            BeanUtil.copyProperties(config, mqttConfig, CopyOptions.create().ignoreNullValue());
             mqttVerticle.setConfig(mqttConfig);
 
-            countDownLatch = new CountDownLatch(1);
             Future<String> future = vertx.deployVerticle(mqttVerticle);
             future.onSuccess((s -> {
                 deployedId = s;
-                countDownLatch.countDown();
+                log.info("mqtt plugin started success");
             }));
             future.onFailure((e) -> {
-                countDownLatch.countDown();
-                log.error("start mqtt plugin failed", e);
+                log.error("mqtt plugin startup failed", e);
             });
-            countDownLatch.await();
-            future.succeeded();
         } catch (Throwable e) {
-            log.error("start mqtt plugin error.", e);
+            log.error("mqtt plugin startup error", e);
         }
     }
 
@@ -74,16 +67,16 @@ public class MqttPlugin implements PluginCloseListener, IPlugin {
         try {
             mqttVerticle.stop();
             Future<Void> future = vertx.undeploy(deployedId);
-            future.onSuccess(unused -> log.info("stop mqtt plugin success"));
+            future.onSuccess(unused -> log.info("mqtt plugin stopped success"));
             if (closeType == PluginCloseType.UNINSTALL) {
-                log.info("插件被卸载了：{}", pluginInfo.getPluginId());
+                log.info("mqtt plugin UNINSTALL：{}", pluginInfo.getPluginId());
             } else if (closeType == PluginCloseType.STOP) {
-                log.info("插件被关闭了：{}", pluginInfo.getPluginId());
+                log.info("mqtt plugin STOP：{}", pluginInfo.getPluginId());
             } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-                log.info("插件被升级卸载了：{}", pluginInfo.getPluginId());
+                log.info("mqtt plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
             }
         } catch (Throwable e) {
-            log.error("stop mqtt plugin error.", e);
+            log.error("mqtt plugin stop error", e);
         }
     }
 

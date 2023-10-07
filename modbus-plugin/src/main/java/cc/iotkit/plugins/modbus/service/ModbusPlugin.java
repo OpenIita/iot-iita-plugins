@@ -124,14 +124,14 @@ public class ModbusPlugin implements PluginCloseListener {
         try {
             master.disconnect();
             if (closeType == PluginCloseType.UNINSTALL) {
-                log.info("插件被卸载了：{}", pluginInfo.getPluginId());
+                log.info("modbus plugin UNINSTALL：{}", pluginInfo.getPluginId());
             } else if (closeType == PluginCloseType.STOP) {
-                log.info("插件被关闭了：{}", pluginInfo.getPluginId());
+                log.info("modbus plugin STOP：{}", pluginInfo.getPluginId());
             } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-                log.info("插件被升级卸载了：{}", pluginInfo.getPluginId());
+                log.info("modbus plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
             }
         } catch (Throwable e) {
-            log.error("stop mqtt plugin error.", e);
+            log.error("modbus plugin stop error", e);
         }
     }
 

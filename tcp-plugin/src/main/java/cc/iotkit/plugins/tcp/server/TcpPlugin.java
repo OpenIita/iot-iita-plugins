@@ -1,8 +1,8 @@
-package cc.iotkit.plugins.http.service;
+package cc.iotkit.plugins.tcp.server;
 
-import cc.iotkit.common.utils.JsonUtils;
+import cc.iotkit.plugin.core.IPlugin;
 import cc.iotkit.plugin.core.IPluginConfig;
-import cc.iotkit.plugins.http.conf.HttpConfig;
+import cc.iotkit.plugins.tcp.conf.TcpServerConfig;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.gitee.starblues.bootstrap.annotation.AutowiredType;
@@ -20,18 +20,21 @@ import javax.annotation.PostConstruct;
 import java.util.Map;
 
 /**
+ * tcp插件
+ *
  * @author sjg
  */
 @Slf4j
 @Service
-public class HttpPlugin implements PluginCloseListener {
+public class TcpPlugin implements PluginCloseListener, IPlugin {
 
     @Autowired
     private PluginInfo pluginInfo;
     @Autowired
-    private HttpVerticle httpVerticle;
+    private TcpServerVerticle tcpServerVerticle;
+
     @Autowired
-    private HttpConfig httpConfig;
+    private TcpServerConfig tcpConfig;
 
     @Autowired
     @AutowiredType(AutowiredType.Type.MAIN_PLUGIN)
@@ -46,39 +49,42 @@ public class HttpPlugin implements PluginCloseListener {
         try {
             //获取插件最新配置替换当前配置
             Map<String, Object> config = pluginConfig.getConfig(pluginInfo.getPluginId());
-            log.info("get config:{}", JsonUtils.toJsonString(config));
-            BeanUtil.copyProperties(config, httpConfig, CopyOptions.create().ignoreNullValue());
-            httpVerticle.setConfig(httpConfig);
+            BeanUtil.copyProperties(config, tcpConfig, CopyOptions.create().ignoreNullValue());
+            tcpServerVerticle.setConfig(tcpConfig);
 
-            Future<String> future = vertx.deployVerticle(httpVerticle);
+            Future<String> future = vertx.deployVerticle(tcpServerVerticle);
             future.onSuccess((s -> {
                 deployedId = s;
-                log.info("http plugin startup success");
+                log.info("tcp plugin started success");
             }));
             future.onFailure((e) -> {
-                log.error("http plugin startup failed", e);
+                log.error("tcp plugin startup failed", e);
             });
         } catch (Throwable e) {
-            log.error("http plugin startup error", e);
+            log.error("tcp plugin startup error", e);
         }
     }
 
     @Override
     public void close(GenericApplicationContext applicationContext, PluginInfo pluginInfo, PluginCloseType closeType) {
         try {
-            httpVerticle.stop();
+            tcpServerVerticle.stop();
             Future<Void> future = vertx.undeploy(deployedId);
-            future.onSuccess(unused -> log.info("http plugin stopped success"));
+            future.onSuccess(unused -> log.info("tcp plugin stopped success"));
             if (closeType == PluginCloseType.UNINSTALL) {
-                log.info("http plugin UNINSTALL：{}", pluginInfo.getPluginId());
+                log.info("tcp plugin UNINSTALL：{}", pluginInfo.getPluginId());
             } else if (closeType == PluginCloseType.STOP) {
-                log.info("http plugin STOP：{}", pluginInfo.getPluginId());
+                log.info("tcp plugin STOP：{}", pluginInfo.getPluginId());
             } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-                log.info("http plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
+                log.info("tcp plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
             }
         } catch (Throwable e) {
-            log.error("http plugin stop error", e);
+            log.error("tcp plugin stop error", e);
         }
     }
 
+    @Override
+    public Map<String, Object> getLinkInfo(String pk, String dn) {
+        return null;
+    }
 }

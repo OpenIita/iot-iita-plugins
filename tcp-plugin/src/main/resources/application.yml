@@ -1,0 +1,8 @@
+plugin:
+  runMode: dev
+#  runMode: prod
+  mainPackage: cc.iotkit.plugin
+
+tcp:
+  host: 127.0.0.1
+  port: 6883
