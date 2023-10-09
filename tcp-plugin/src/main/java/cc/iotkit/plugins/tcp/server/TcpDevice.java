@@ -11,6 +11,7 @@ import cc.iotkit.plugin.core.thing.actions.down.ServiceInvoke;
 import cc.iotkit.plugins.tcp.parser.DataEncoder;
 import cc.iotkit.plugins.tcp.parser.DataPackage;
 import cc.iotkit.script.IScriptEngine;
+import cn.hutool.core.util.HexUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vertx.core.buffer.Buffer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +56,7 @@ public class TcpDevice implements IDevice {
         if (atMid.compareAndSet(Short.MAX_VALUE / 2 - 1, 0)) {
             atMid.set(0);
         }
-        byte[] bytes = payload.getBytes();
+        byte[] bytes = HexUtil.decodeHex(payload);
 
         //构造数据包
         DataPackage data = DataPackage.builder()

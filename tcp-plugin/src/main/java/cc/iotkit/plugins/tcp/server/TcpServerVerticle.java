@@ -35,7 +35,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,10 +56,6 @@ public class TcpServerVerticle extends AbstractVerticle {
     private final Map<String, String> dnToPk = new HashMap<>();
 
     private final Map<String, Long> heartbeatDevice = new HashMap<>();
-
-    private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-
-    private ScheduledThreadPoolExecutor offlineCheckExecutor;
 
     @Setter
     private long keepAliveTimeout = Duration.ofSeconds(30).toMillis();
@@ -91,8 +86,6 @@ public class TcpServerVerticle extends AbstractVerticle {
     @Override
     public void stop() {
         tcpServer.shutdown();
-        scheduledThreadPoolExecutor.shutdown();
-        offlineCheckExecutor.shutdown();
     }
 
     /**
@@ -208,7 +201,7 @@ public class TcpServerVerticle extends AbstractVerticle {
                         DataPackage data = DataDecoder.decode(buffer);
                         String addr = data.getAddr();
                         int code = data.getCode();
-                        if (code == 0x10) {
+                        if (code == DataPackage.CODE_REGISTER) {
                             clientMap.put(addr, client);
                             //设备注册
                             String pk = dnToPk.put(addr, new String(data.getPayload()));
@@ -219,7 +212,7 @@ public class TcpServerVerticle extends AbstractVerticle {
                                     .time(System.currentTimeMillis())
                                     .build());
                             if (rst.getCode() == 0) {
-                                //回复注册成功
+                                //回复注册成功给客户端
                                 sendMsg(addr, DataEncoder.encode(
                                         DataPackage.builder()
                                                 .addr(addr)
@@ -232,27 +225,19 @@ public class TcpServerVerticle extends AbstractVerticle {
                             return;
                         }
 
-                        if (code == 0x20) {
+                        if (code == DataPackage.CODE_HEARTBEAT) {
                             //心跳
-                            if (!heartbeatDevice.containsKey(addr)) {
-                                //第一次心跳，上线
-                                thingService.post(pluginInfo.getPluginId(), DeviceStateChange.builder()
-                                        .id(IdUtil.simpleUUID())
-                                        .productKey(dnToPk.get(addr))
-                                        .deviceName(addr)
-                                        .state(DeviceState.ONLINE)
-                                        .time(System.currentTimeMillis())
-                                        .build());
-                            }
+                            online(addr);
                             heartbeatDevice.put(addr, System.currentTimeMillis());
                             return;
                         }
 
-                        if (code == 0x30) {
+                        if (code == DataPackage.CODE_DATA_UP) {
                             //设备数据上报
+                            online(addr);
                             //数据上报也作为心跳
                             heartbeatDevice.put(addr, System.currentTimeMillis());
-                            //调用脚本解码
+                            //这里可以直接解码，或调用脚本解码（用脚本解码不用修改程序重新打包）
                             Map<String, Object> rst = scriptEngine.invokeMethod(new TypeReference<>() {
                             }, "decode", data);
                             if (rst == null) {
@@ -282,6 +267,19 @@ public class TcpServerVerticle extends AbstractVerticle {
             } catch (Exception e) {
                 log.error("create tcp server client error", e);
                 client.shutdown();
+            }
+        }
+
+        private void online(String addr) {
+            if (!heartbeatDevice.containsKey(addr)) {
+                //第一次心跳，上线
+                thingService.post(pluginInfo.getPluginId(), DeviceStateChange.builder()
+                        .id(IdUtil.simpleUUID())
+                        .productKey(dnToPk.get(addr))
+                        .deviceName(addr)
+                        .state(DeviceState.ONLINE)
+                        .time(System.currentTimeMillis())
+                        .build());
             }
         }
 

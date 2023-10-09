@@ -67,19 +67,15 @@ public class TcpPlugin implements PluginCloseListener, IPlugin {
 
     @Override
     public void close(GenericApplicationContext applicationContext, PluginInfo pluginInfo, PluginCloseType closeType) {
-        try {
-            tcpServerVerticle.stop();
-            Future<Void> future = vertx.undeploy(deployedId);
-            future.onSuccess(unused -> log.info("tcp plugin stopped success"));
-            if (closeType == PluginCloseType.UNINSTALL) {
-                log.info("tcp plugin UNINSTALL：{}", pluginInfo.getPluginId());
-            } else if (closeType == PluginCloseType.STOP) {
-                log.info("tcp plugin STOP：{}", pluginInfo.getPluginId());
-            } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-                log.info("tcp plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
-            }
-        } catch (Throwable e) {
-            log.error("tcp plugin stop error", e);
+        tcpServerVerticle.stop();
+        Future<Void> future = vertx.undeploy(deployedId);
+        future.onSuccess(unused -> log.info("tcp plugin stopped success"));
+        if (closeType == PluginCloseType.UNINSTALL) {
+            log.info("tcp plugin UNINSTALL：{}", pluginInfo.getPluginId());
+        } else if (closeType == PluginCloseType.STOP) {
+            log.info("tcp plugin STOP：{}", pluginInfo.getPluginId());
+        } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
+            log.info("tcp plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
         }
     }
 

@@ -8,8 +8,6 @@ import cc.iotkit.plugins.tcp.parser.DataReader;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.RandomUtil;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
@@ -57,7 +55,7 @@ public class TcpClientVerticle extends AbstractVerticle {
         netClient = vertx.createNetClient(options);
         RecordParser parser = DataReader.getParser(this::handle);
 
-        netClient.connect(6883, "127.0.0.1", result -> {
+        netClient.connect(6884, "127.0.0.1", result -> {
             if (result.succeeded()) {
                 log.debug("connect tcp success");
                 socket = result.result();
