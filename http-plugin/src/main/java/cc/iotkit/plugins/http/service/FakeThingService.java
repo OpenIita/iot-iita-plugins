@@ -29,7 +29,7 @@ public class FakeThingService implements IThingService {
     public Product getProduct(String pk) {
         return Product.builder()
                 .productKey("cGCrkK7Ex4FESAwe")
-                .productSecret("aaaaaaaa")
+                .productSecret("xdkKUymrEGSCYWswqCvSPyRSFvH5j7CU")
                 .build();
     }
 

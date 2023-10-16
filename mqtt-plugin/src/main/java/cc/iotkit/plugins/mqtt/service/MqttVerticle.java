@@ -12,6 +12,7 @@ package cc.iotkit.plugins.mqtt.service;
 import cc.iotkit.common.enums.ErrCode;
 import cc.iotkit.common.exception.BizException;
 import cc.iotkit.common.utils.CodecUtil;
+import cc.iotkit.common.utils.StringUtils;
 import cc.iotkit.common.utils.UniqueIdUtil;
 import cc.iotkit.model.product.Product;
 import cc.iotkit.plugin.core.thing.IThingService;
@@ -62,6 +63,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
      * 增加一个客户端连接clientid-连接状态池，避免mqtt关闭的时候走异常断开和mqtt断开的handler，导致多次离线消息
      */
     private static final Map<String, Boolean> MQTT_CONNECT_POOL = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> DEVICE_ONLINE = new ConcurrentHashMap<>();
 
     private MqttConfig config;
 
@@ -85,7 +87,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
         options.setUseWebSocket(config.isUseWebSocket());
 
         mqttServer = MqttServer.create(vertx, options);
-        mqttServer.endpointHandler(this::handle).listen(ar -> {
+        mqttServer.endpointHandler(this).listen(ar -> {
             if (ar.succeeded()) {
                 log.info("MQTT server is listening on port " + ar.result().actualPort());
             } else {
@@ -142,7 +144,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             return;
         }
 
-        //设备注册
+        //网关设备注册
         ActionResult result = thingService.post(
                 pluginInfo.getPluginId(),
                 fillAction(
@@ -168,6 +170,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
         endpoint.accept(false);
 
         endpoint.closeHandler((v) -> {
+            // 网络不好时也会出发,但是设备仍然可以发消息
             log.warn("client connection closed,clientId:{}", clientId);
             if (Boolean.FALSE.equals(MQTT_CONNECT_POOL.get(clientId))) {
                 MQTT_CONNECT_POOL.remove(clientId);
@@ -183,35 +186,23 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                             , productKey, deviceName
                     )
             );
+            DEVICE_ONLINE.clear();
             //删除设备与连接关系
             endpointMap.remove(deviceName);
         }).disconnectMessageHandler(disconnectMessage -> {
             log.info("Received disconnect from client, reason code = {}", disconnectMessage.code());
+            if (!MQTT_CONNECT_POOL.get(clientId)) {
+                return;
+            }
             //删除设备与连接关系
             endpointMap.remove(deviceName);
             MQTT_CONNECT_POOL.put(clientId, false);
+            DEVICE_ONLINE.clear();
         }).subscribeHandler(subscribe -> {
-            //上线
-            thingService.post(
-                    pluginInfo.getPluginId(),
-                    fillAction(DeviceStateChange.builder()
-                                    .state(DeviceState.ONLINE)
-                                    .build()
-                            , productKey, deviceName
-                    )
-            );
-
             List<MqttSubAckReasonCode> reasonCodes = new ArrayList<>();
             for (MqttTopicSubscription s : subscribe.topicSubscriptions()) {
                 log.info("Subscription for {},with QoS {}", s.topicName(), s.qualityOfService());
                 try {
-                    String topic = s.topicName();
-                    //topic订阅验证 /sys/{productKey}/{deviceName}/#
-                    String regex = String.format("^/sys/%s/%s/.*", productKey, deviceName);
-                    if (!topic.matches(regex)) {
-                        log.error("subscript topic:{} incorrect,regex:{}", topic, regex);
-                        continue;
-                    }
                     reasonCodes.add(MqttSubAckReasonCode.qosGranted(s.qualityOfService()));
                 } catch (Throwable e) {
                     log.error("subscribe failed,topic:" + s.topicName(), e);
@@ -220,7 +211,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             }
             // ack the subscriptions request
             endpoint.subscribeAcknowledge(subscribe.messageId(), reasonCodes, MqttProperties.NO_PROPERTIES);
-
         }).unsubscribeHandler(unsubscribe -> {
             //下线
             thingService.post(
@@ -232,57 +222,112 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                             , productKey, deviceName
                     )
             );
+            DEVICE_ONLINE.clear();
 
             // ack the subscriptions request
             endpoint.unsubscribeAcknowledge(unsubscribe.messageId());
         }).publishHandler(message -> {
+            String topic = message.topicName();
             JsonObject payload = message.payload().toJsonObject();
-            log.info("Received message:{}, with QoS {}", payload,
+            log.info("Received message:topic={},payload={}, with QoS {}", topic, payload,
                     message.qosLevel());
+
+            if (message.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
+                endpoint.publishAcknowledge(message.messageId());
+            } else if (message.qosLevel() == MqttQoS.EXACTLY_ONCE) {
+                endpoint.publishReceived(message.messageId());
+            }
             if (payload.isEmpty()) {
                 return;
             }
-            String topic = message.topicName();
+
+            String[] topicParts = topic.split("/");
+            if (topicParts.length < 5) {
+                return;
+            }
+
+            //网关上线
+            online(productKey, deviceName);
+
+            String topicPk = topicParts[2];
+            String topicDn = topicParts[3];
+
+            if (!MQTT_CONNECT_POOL.get(clientId)) {
+                //保存设备与连接关系
+                endpointMap.put(deviceName, endpoint);
+                MQTT_CONNECT_POOL.put(clientId, true);
+                log.info("mqtt client reconnect success,clientId:{}", clientId);
+            }
 
             try {
                 JsonObject defParams = JsonObject.mapFrom(new HashMap<>(0));
                 IDeviceAction action = null;
 
                 String method = payload.getString("method", "");
+                if (StringUtils.isBlank(method)) {
+                    return;
+                }
+                JsonObject params = payload.getJsonObject("params", defParams);
+
+                if ("thing.lifetime.register".equalsIgnoreCase(method)) {
+                    //子设备注册
+                    ActionResult regResult = thingService.post(
+                            pluginInfo.getPluginId(),
+                            fillAction(
+                                    DeviceRegister.builder()
+                                            .productKey(params.getString("productKey"))
+                                            .deviceName(params.getString("deviceName"))
+                                            .model(params.getString("model"))
+                                            .version("1.0")
+                                            .build()
+                                    , productKey, deviceName
+                            )
+                    );
+                    if (regResult.getCode() == 0) {
+                        //注册成功
+                        reply(endpoint, topic, payload);
+                    } else {
+                        //注册失败
+                        reply(endpoint, topic, new JsonObject(), regResult.getCode());
+                    }
+                    return;
+                }
+
                 if ("thing.event.property.post".equalsIgnoreCase(method)) {
+                    //设备上线处理
+                    online(topicPk, topicDn);
                     //属性上报
                     action = PropertyReport.builder()
-                            .params(payload.getJsonObject("params", defParams).getMap())
+                            .params(params.getMap())
                             .build();
                     reply(endpoint, topic, payload);
                 } else if (method.startsWith("thing.event.")) {
+                    //设备上线处理
+                    online(topicPk, topicDn);
                     //事件上报
                     action = EventReport.builder()
                             .name(method.replace("thing.event.", ""))
                             .level(EventLevel.INFO)
-                            .params(payload.getJsonObject("params", defParams).getMap())
+                            .params(params.getMap())
                             .build();
                     reply(endpoint, topic, payload);
                 } else if (method.startsWith("thing.service.") && method.endsWith("_reply")) {
+                    //设备上线处理
+                    online(topicPk, topicDn);
                     //服务回复
                     action = ServiceReply.builder()
                             .name(method.replaceAll("thing\\.service\\.(.*)_reply", "$1"))
                             .code(payload.getInteger("code", 0))
-                            .params(payload.getJsonObject("data", defParams).getMap())
+                            .params(params.getMap())
                             .build();
-                }
-                if (message.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
-                    endpoint.publishAcknowledge(message.messageId());
-                } else if (message.qosLevel() == MqttQoS.EXACTLY_ONCE) {
-                    endpoint.publishReceived(message.messageId());
                 }
 
                 if (action == null) {
                     return;
                 }
                 action.setId(payload.getString("id"));
-                action.setProductKey(productKey);
-                action.setDeviceName(deviceName);
+                action.setProductKey(topicPk);
+                action.setDeviceName(topicDn);
                 action.setTime(System.currentTimeMillis());
                 thingService.post(pluginInfo.getPluginId(), action);
             } catch (Throwable e) {
@@ -292,14 +337,39 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
 
     }
 
+    public void online(String pk, String dn) {
+        if (Boolean.TRUE.equals(DEVICE_ONLINE.get(dn))) {
+            return;
+        }
+
+        //上线
+        thingService.post(
+                pluginInfo.getPluginId(),
+                fillAction(DeviceStateChange.builder()
+                                .state(DeviceState.ONLINE)
+                                .build()
+                        , pk, dn
+                )
+        );
+        DEVICE_ONLINE.put(dn, true);
+    }
+
     /**
      * 回复设备
      */
     private void reply(MqttEndpoint endpoint, String topic, JsonObject payload) {
+        reply(endpoint, topic, payload, 0);
+    }
+
+    /**
+     * 回复设备
+     */
+    private void reply(MqttEndpoint endpoint, String topic, JsonObject payload, int code) {
         Map<String, Object> payloadReply = new HashMap<>();
         payloadReply.put("id", payload.getString("id"));
         payloadReply.put("method", payload.getString("method") + "_reply");
-        payloadReply.put("code", 0);
+        payloadReply.put("code", code);
+        payloadReply.put("data", payload.getJsonObject("params"));
 
         endpoint.publish(topic + "_reply", JsonObject.mapFrom(payloadReply).toBuffer(), MqttQoS.AT_LEAST_ONCE, false, false);
     }
@@ -332,6 +402,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                             parts[1]
                     )
             );
+            DEVICE_ONLINE.clear();
         }
         mqttServer.close(voidAsyncResult -> log.info("close mqtt server..."));
     }
