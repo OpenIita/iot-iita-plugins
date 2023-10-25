@@ -57,6 +57,7 @@
             <plugin>
                 <groupId>com.gitee.starblues</groupId>
                 <artifactId>spring-brick-maven-packager</artifactId>
+                <version>${spring-brick.version}</version>
                 <configuration>
                     <mode>${plugin.build.mode}</mode>
                     <pluginInfo>

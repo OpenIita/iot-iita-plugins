@@ -79,8 +79,12 @@ public class TcpServerVerticle extends AbstractVerticle {
     @Override
     public void start() {
         tcpServer = new VertxTcpServer();
-        initConfig();
-        initTcpServer();
+        try {
+            initConfig();
+            initTcpServer();
+        } catch (Exception e) {
+            log.error("init tcp server failed", e);
+        }
     }
 
     @Override
