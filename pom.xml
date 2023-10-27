@@ -8,7 +8,6 @@
         <module>http-plugin</module>
         <module>modbus-plugin</module>
         <module>tcp-plugin</module>
-        <module>tcp-plugin2</module>
     </modules>
 
     <parent>
