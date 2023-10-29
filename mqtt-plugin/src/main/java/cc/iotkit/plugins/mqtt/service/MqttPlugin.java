@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author sjg
@@ -65,15 +67,20 @@ public class MqttPlugin implements PluginCloseListener, IPlugin {
     @Override
     public void close(GenericApplicationContext applicationContext, PluginInfo pluginInfo, PluginCloseType closeType) {
         try {
-            mqttVerticle.stop();
-            Future<Void> future = vertx.undeploy(deployedId);
-            future.onSuccess(unused -> log.info("mqtt plugin stopped success"));
-            if (closeType == PluginCloseType.UNINSTALL) {
-                log.info("mqtt plugin UNINSTALL：{}", pluginInfo.getPluginId());
-            } else if (closeType == PluginCloseType.STOP) {
-                log.info("mqtt plugin STOP：{}", pluginInfo.getPluginId());
-            } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-                log.info("mqtt plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
+            log.info("plugin close,type:{},pluginId:{}", closeType, pluginInfo.getPluginId());
+            if (deployedId != null) {
+                CountDownLatch wait = new CountDownLatch(1);
+                Future<Void> future = vertx.undeploy(deployedId);
+                future.onSuccess(unused -> {
+                    log.info("tcp plugin stopped success");
+                    wait.countDown();
+                });
+                future.onFailure(h -> {
+                    log.info("tcp plugin stopped failed");
+                    h.printStackTrace();
+                    wait.countDown();
+                });
+                wait.await(5, TimeUnit.SECONDS);
             }
         } catch (Throwable e) {
             log.error("mqtt plugin stop error", e);

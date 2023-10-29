@@ -49,8 +49,6 @@ public class TcpServerVerticle extends AbstractVerticle {
     @Setter
     private TcpServerConfig config;
 
-    private VertxTcpServer tcpServer;
-
     private final Map<String, VertxTcpClient> clientMap = new ConcurrentHashMap<>();
 
     private final Map<String, String> dnToPk = new HashMap<>();
@@ -60,7 +58,7 @@ public class TcpServerVerticle extends AbstractVerticle {
     @Setter
     private long keepAliveTimeout = Duration.ofSeconds(30).toMillis();
 
-    private Collection<NetServer> tcpServers;
+    private NetServer netServer;
 
     @Getter
     private IScriptEngine scriptEngine;
@@ -78,18 +76,18 @@ public class TcpServerVerticle extends AbstractVerticle {
 
     @Override
     public void start() {
-        tcpServer = new VertxTcpServer();
         try {
             initConfig();
             initTcpServer();
         } catch (Exception e) {
-            log.error("init tcp server failed", e);
+            log.info("init tcp server failed");
+            e.printStackTrace();
         }
     }
 
     @Override
     public void stop() {
-        tcpServer.shutdown();
+        log.info("tcp server stopped");
     }
 
     /**
@@ -104,29 +102,18 @@ public class TcpServerVerticle extends AbstractVerticle {
     /**
      * 初始TCP服务
      */
-    private void initTcpServer() {
-        int instance = Math.max(2, config.getInstance());
-        List<NetServer> instances = new ArrayList<>(instance);
-        for (int i = 0; i < instance; i++) {
-            instances.add(vertx.createNetServer(
-                    new NetServerOptions().setHost(config.getHost())
-                            .setPort(config.getPort())
-            ));
-        }
-        // 根据解析类型配置数据解析器
-        tcpServer.setServer(instances);
-        // 针对JVM做的多路复用优化
-        // 多个server listen同一个端口，每个client连接的时候vertx会分配
-        // 一个connection只能在一个server中处理
-        for (NetServer netServer : instances) {
-            netServer.listen(config.createSocketAddress(), result -> {
-                if (result.succeeded()) {
-                    log.info("tcp server startup on {}", result.result().actualPort());
-                } else {
-                    log.error("tcp server startup error", result.cause());
-                }
-            });
-        }
+    private void initTcpServer() throws Exception {
+        netServer = vertx.createNetServer(
+                new NetServerOptions().setHost(config.getHost())
+                        .setPort(config.getPort()));
+        netServer.connectHandler(this::acceptTcpConnection);
+        netServer.listen(config.createSocketAddress(), result -> {
+            if (result.succeeded()) {
+                log.info("tcp server startup on {}", result.result().actualPort());
+            } else {
+                result.cause().printStackTrace();
+            }
+        });
     }
 
     public void sendMsg(String addr, Buffer msg) {
@@ -164,142 +151,110 @@ public class TcpServerVerticle extends AbstractVerticle {
         });
     }
 
-    class VertxTcpServer {
-
-        /**
-         * 为每个NetServer添加connectHandler
-         *
-         * @param servers 创建的所有NetServer
-         */
-        public void setServer(Collection<NetServer> servers) {
-            if (tcpServers != null && !tcpServers.isEmpty()) {
-                shutdown();
-            }
-            tcpServers = servers;
-            for (NetServer tcpServer : tcpServers) {
-                tcpServer.connectHandler(this::acceptTcpConnection);
-            }
-        }
-
-        /**
-         * TCP连接处理逻辑
-         *
-         * @param socket socket
-         */
-        protected void acceptTcpConnection(NetSocket socket) {
-            // 客户端连接处理
-            String clientId = IdUtil.simpleUUID() + "_" + socket.remoteAddress();
-            VertxTcpClient client = new VertxTcpClient(clientId);
-            client.setKeepAliveTimeoutMs(keepAliveTimeout);
-            try {
-                // TCP异常和关闭处理
-                socket.exceptionHandler(err -> log.error("tcp server client [{}] error", socket.remoteAddress(), err)).closeHandler(nil -> {
-                    log.debug("tcp server client [{}] closed", socket.remoteAddress());
-                    client.shutdown();
-                });
-                // 这个地方是在TCP服务初始化的时候设置的 parserSupplier
-                client.setKeepAliveTimeoutMs(keepAliveTimeout);
-                client.setSocket(socket);
-                RecordParser parser = DataReader.getParser(buffer -> {
-                    try {
-                        DataPackage data = DataDecoder.decode(buffer);
-                        String addr = data.getAddr();
-                        int code = data.getCode();
-                        if (code == DataPackage.CODE_REGISTER) {
-                            clientMap.put(addr, client);
-                            //设备注册
-                            String pk = dnToPk.put(addr, new String(data.getPayload()));
-                            ActionResult rst = thingService.post(pluginInfo.getPluginId(), DeviceRegister.builder()
-                                    .id(IdUtil.simpleUUID())
-                                    .productKey(pk)
-                                    .deviceName(addr)
-                                    .time(System.currentTimeMillis())
-                                    .build());
-                            if (rst.getCode() == 0) {
-                                //回复注册成功给客户端
-                                sendMsg(addr, DataEncoder.encode(
-                                        DataPackage.builder()
-                                                .addr(addr)
-                                                .code(DataPackage.CODE_REGISTER_REPLY)
-                                                .mid(data.getMid())
-                                                .payload(Buffer.buffer().appendInt(0).getBytes())
-                                                .build()
-                                ));
-                            }
-                            return;
-                        }
-
-                        if (code == DataPackage.CODE_HEARTBEAT) {
-                            //心跳
-                            online(addr);
-                            heartbeatDevice.put(addr, System.currentTimeMillis());
-                            return;
-                        }
-
-                        if (code == DataPackage.CODE_DATA_UP) {
-                            //设备数据上报
-                            online(addr);
-                            //数据上报也作为心跳
-                            heartbeatDevice.put(addr, System.currentTimeMillis());
-                            //这里可以直接解码，或调用脚本解码（用脚本解码不用修改程序重新打包）
-                            Map<String, Object> rst = scriptEngine.invokeMethod(new TypeReference<>() {
-                            }, "decode", data);
-                            if (rst == null) {
-                                return;
-                            }
-                            //属性上报
-                            thingService.post(pluginInfo.getPluginId(), PropertyReport.builder()
-                                    .id(IdUtil.simpleUUID())
-                                    .productKey(dnToPk.get(addr))
-                                    .deviceName(addr)
-                                    .params(rst)
-                                    .time(System.currentTimeMillis())
-                                    .build());
-                        }
-
-                        //未注册断开连接
-                        if (!clientMap.containsKey(data.getAddr())) {
-                            socket.close();
-                        }
-
-                    } catch (Exception e) {
-                        log.error("handler error", e);
-                    }
-                });
-                client.setParser(parser);
-                log.debug("accept tcp client [{}] connection", socket.remoteAddress());
-            } catch (Exception e) {
-                log.error("create tcp server client error", e);
+    /**
+     * TCP连接处理逻辑
+     *
+     * @param socket socket
+     */
+    protected void acceptTcpConnection(NetSocket socket) {
+        // 客户端连接处理
+        String clientId = IdUtil.simpleUUID() + "_" + socket.remoteAddress();
+        VertxTcpClient client = new VertxTcpClient(clientId);
+        client.setKeepAliveTimeoutMs(keepAliveTimeout);
+        try {
+            // TCP异常和关闭处理
+            socket.exceptionHandler(Throwable::printStackTrace).closeHandler(nil -> {
+                log.debug("tcp server client [{}] closed", socket.remoteAddress());
                 client.shutdown();
-            }
-        }
-
-        private void online(String addr) {
-            if (!heartbeatDevice.containsKey(addr)) {
-                //第一次心跳，上线
-                thingService.post(pluginInfo.getPluginId(), DeviceStateChange.builder()
-                        .id(IdUtil.simpleUUID())
-                        .productKey(dnToPk.get(addr))
-                        .deviceName(addr)
-                        .state(DeviceState.ONLINE)
-                        .time(System.currentTimeMillis())
-                        .build());
-            }
-        }
-
-        public void shutdown() {
-            if (tcpServers == null) {
-                return;
-            }
-            for (NetServer tcpServer : tcpServers) {
+            });
+            // 这个地方是在TCP服务初始化的时候设置的 parserSupplier
+            client.setKeepAliveTimeoutMs(keepAliveTimeout);
+            client.setSocket(socket);
+            RecordParser parser = DataReader.getParser(buffer -> {
                 try {
-                    tcpServer.close();
-                } catch (Exception e) {
-                    log.warn("close tcp server error", e);
-                }
-            }
-            tcpServers = null;
-        }
+                    DataPackage data = DataDecoder.decode(buffer);
+                    String addr = data.getAddr();
+                    int code = data.getCode();
+                    if (code == DataPackage.CODE_REGISTER) {
+                        clientMap.put(addr, client);
+                        //设备注册
+                        String pk = dnToPk.put(addr, new String(data.getPayload()));
+                        ActionResult rst = thingService.post(pluginInfo.getPluginId(), DeviceRegister.builder()
+                                .id(IdUtil.simpleUUID())
+                                .productKey(pk)
+                                .deviceName(addr)
+                                .time(System.currentTimeMillis())
+                                .build());
+                        if (rst.getCode() == 0) {
+                            //回复注册成功给客户端
+                            sendMsg(addr, DataEncoder.encode(
+                                    DataPackage.builder()
+                                            .addr(addr)
+                                            .code(DataPackage.CODE_REGISTER_REPLY)
+                                            .mid(data.getMid())
+                                            .payload(Buffer.buffer().appendInt(0).getBytes())
+                                            .build()
+                            ));
+                        }
+                        return;
+                    }
 
+                    if (code == DataPackage.CODE_HEARTBEAT) {
+                        //心跳
+                        online(addr);
+                        heartbeatDevice.put(addr, System.currentTimeMillis());
+                        return;
+                    }
+
+                    if (code == DataPackage.CODE_DATA_UP) {
+                        //设备数据上报
+                        online(addr);
+                        //数据上报也作为心跳
+                        heartbeatDevice.put(addr, System.currentTimeMillis());
+                        //这里可以直接解码，或调用脚本解码（用脚本解码不用修改程序重新打包）
+                        Map<String, Object> rst = scriptEngine.invokeMethod(new TypeReference<>() {
+                        }, "decode", data);
+                        if (rst == null) {
+                            return;
+                        }
+                        //属性上报
+                        thingService.post(pluginInfo.getPluginId(), PropertyReport.builder()
+                                .id(IdUtil.simpleUUID())
+                                .productKey(dnToPk.get(addr))
+                                .deviceName(addr)
+                                .params(rst)
+                                .time(System.currentTimeMillis())
+                                .build());
+                    }
+
+                    //未注册断开连接
+                    if (!clientMap.containsKey(data.getAddr())) {
+                        socket.close();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            client.setParser(parser);
+            log.debug("accept tcp client [{}] connection", socket.remoteAddress());
+        } catch (Exception e) {
+            e.printStackTrace();
+            client.shutdown();
+        }
     }
+
+    private void online(String addr) {
+        if (!heartbeatDevice.containsKey(addr)) {
+            //第一次心跳，上线
+            thingService.post(pluginInfo.getPluginId(), DeviceStateChange.builder()
+                    .id(IdUtil.simpleUUID())
+                    .productKey(dnToPk.get(addr))
+                    .deviceName(addr)
+                    .state(DeviceState.ONLINE)
+                    .time(System.currentTimeMillis())
+                    .build());
+        }
+    }
+
 }

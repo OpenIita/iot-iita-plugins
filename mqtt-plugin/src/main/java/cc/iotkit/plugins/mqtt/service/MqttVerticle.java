@@ -404,7 +404,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             );
             DEVICE_ONLINE.clear();
         }
-        mqttServer.close(voidAsyncResult -> log.info("close mqtt server..."));
     }
 
     public void publish(String deviceName, String topic, String msg) {

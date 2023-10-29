@@ -122,14 +122,8 @@ public class ModbusPlugin implements PluginCloseListener {
     @Override
     public void close(GenericApplicationContext applicationContext, PluginInfo pluginInfo, PluginCloseType closeType) {
         try {
+            log.info("plugin close,type:{},pluginId:{}", closeType, pluginInfo.getPluginId());
             master.disconnect();
-            if (closeType == PluginCloseType.UNINSTALL) {
-                log.info("modbus plugin UNINSTALL：{}", pluginInfo.getPluginId());
-            } else if (closeType == PluginCloseType.STOP) {
-                log.info("modbus plugin STOP：{}", pluginInfo.getPluginId());
-            } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-                log.info("modbus plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
-            }
         } catch (Throwable e) {
             log.error("modbus plugin stop error", e);
         }

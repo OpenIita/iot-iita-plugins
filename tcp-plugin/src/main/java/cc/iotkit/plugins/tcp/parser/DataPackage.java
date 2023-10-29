@@ -23,10 +23,6 @@ import java.io.IOException;
 @Builder
 public class DataPackage {
 
-    public static final short FLAG = 0x8D;
-
-    public static final int HEAD_LEN = 2 + 6 + 2 + 2 + 4;
-
     public static final short CODE_REGISTER = 0x10;
     public static final short CODE_REGISTER_REPLY = 0x11;
     public static final short CODE_HEARTBEAT = 0x20;

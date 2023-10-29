@@ -11,6 +11,7 @@ import com.gitee.starblues.core.PluginCloseType;
 import com.gitee.starblues.core.PluginInfo;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.GenericApplicationContext;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * tcp插件
@@ -57,25 +60,30 @@ public class TcpPlugin implements PluginCloseListener, IPlugin {
                 deployedId = s;
                 log.info("tcp plugin started success");
             }));
-            future.onFailure((e) -> {
-                log.error("tcp plugin startup failed", e);
-            });
+            future.onFailure(Throwable::printStackTrace);
         } catch (Throwable e) {
-            log.error("tcp plugin startup error", e);
+            e.printStackTrace();
         }
     }
 
+
+    @SneakyThrows
     @Override
     public void close(GenericApplicationContext applicationContext, PluginInfo pluginInfo, PluginCloseType closeType) {
-        tcpServerVerticle.stop();
-        Future<Void> future = vertx.undeploy(deployedId);
-        future.onSuccess(unused -> log.info("tcp plugin stopped success"));
-        if (closeType == PluginCloseType.UNINSTALL) {
-            log.info("tcp plugin UNINSTALL：{}", pluginInfo.getPluginId());
-        } else if (closeType == PluginCloseType.STOP) {
-            log.info("tcp plugin STOP：{}", pluginInfo.getPluginId());
-        } else if (closeType == PluginCloseType.UPGRADE_UNINSTALL) {
-            log.info("tcp plugin UPGRADE_UNINSTALL：{}", pluginInfo.getPluginId());
+        log.info("plugin close,type:{},pluginId:{}", closeType, pluginInfo.getPluginId());
+        if (deployedId != null) {
+            CountDownLatch wait = new CountDownLatch(1);
+            Future<Void> future = vertx.undeploy(deployedId);
+            future.onSuccess(unused -> {
+                log.info("tcp plugin stopped success");
+                wait.countDown();
+            });
+            future.onFailure(h -> {
+                log.info("tcp plugin stopped failed");
+                h.printStackTrace();
+                wait.countDown();
+            });
+            wait.await(5, TimeUnit.SECONDS);
         }
     }
 

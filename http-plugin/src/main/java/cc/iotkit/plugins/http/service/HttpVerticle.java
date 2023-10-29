@@ -78,8 +78,7 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
     }
 
     @Override
-    public void stop() throws Exception {
-        httpServer.close((r) -> log.info("http server close result:{}", r.succeeded()));
+    public void stop() {
     }
 
     @Override
