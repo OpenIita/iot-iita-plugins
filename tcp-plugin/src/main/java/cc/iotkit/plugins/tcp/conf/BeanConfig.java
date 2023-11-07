@@ -24,7 +24,7 @@ public class BeanConfig {
     @Bean
     @ConditionalOnProperty(name = "plugin.runMode", havingValue = "dev")
     IPluginScript getPluginScript() {
-        return new LocalPluginScript("test.js");
+        return new LocalPluginScript("script.js");
     }
 
     @Bean

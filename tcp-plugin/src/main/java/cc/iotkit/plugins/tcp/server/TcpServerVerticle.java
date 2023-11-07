@@ -1,6 +1,8 @@
 package cc.iotkit.plugins.tcp.server;
 
 
+import cc.iotkit.common.enums.ErrCode;
+import cc.iotkit.common.exception.BizException;
 import cc.iotkit.plugin.core.IPluginScript;
 import cc.iotkit.plugin.core.thing.IThingService;
 import cc.iotkit.plugin.core.thing.actions.ActionResult;
@@ -75,14 +77,10 @@ public class TcpServerVerticle extends AbstractVerticle {
     private IThingService thingService;
 
     @Override
-    public void start() {
-        try {
-            initConfig();
-            initTcpServer();
-        } catch (Exception e) {
-            log.info("init tcp server failed");
-            e.printStackTrace();
-        }
+    public void start() throws Exception {
+        initConfig();
+        initTcpServer();
+        log.info("init tcp server failed");
     }
 
     @Override
@@ -96,13 +94,16 @@ public class TcpServerVerticle extends AbstractVerticle {
     public void initConfig() {
         //获取脚本引擎
         scriptEngine = pluginScript.getScriptEngine(pluginInfo.getPluginId());
+        if (scriptEngine == null) {
+            throw new BizException("script engine is null");
+        }
     }
 
 
     /**
      * 初始TCP服务
      */
-    private void initTcpServer() throws Exception {
+    private void initTcpServer() {
         netServer = vertx.createNetServer(
                 new NetServerOptions().setHost(config.getHost())
                         .setPort(config.getPort()));

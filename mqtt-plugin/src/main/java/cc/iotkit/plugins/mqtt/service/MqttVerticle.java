@@ -35,7 +35,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.mqtt.*;
 import io.vertx.mqtt.messages.codes.MqttSubAckReasonCode;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -203,6 +205,11 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             for (MqttTopicSubscription s : subscribe.topicSubscriptions()) {
                 log.info("Subscription for {},with QoS {}", s.topicName(), s.qualityOfService());
                 try {
+                    String topic = s.topicName();
+                    Device device = getDevice(topic);
+                    //添加设备对应连接
+                    endpointMap.put(device.getDeviceName(), endpoint);
+                    online(device.getProductKey(), device.getDeviceName());
                     reasonCodes.add(MqttSubAckReasonCode.qosGranted(s.qualityOfService()));
                 } catch (Throwable e) {
                     log.error("subscribe failed,topic:" + s.topicName(), e);
@@ -212,17 +219,22 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             // ack the subscriptions request
             endpoint.subscribeAcknowledge(subscribe.messageId(), reasonCodes, MqttProperties.NO_PROPERTIES);
         }).unsubscribeHandler(unsubscribe -> {
-            //下线
-            thingService.post(
-                    pluginInfo.getPluginId(),
-                    fillAction(
-                            DeviceStateChange.builder()
-                                    .state(DeviceState.OFFLINE)
-                                    .build()
-                            , productKey, deviceName
-                    )
-            );
-            DEVICE_ONLINE.clear();
+            for (String topic : unsubscribe.topics()) {
+                Device device = getDevice(topic);
+                //删除设备对应连接
+                endpointMap.remove(device.getDeviceName());
+                //下线
+                thingService.post(
+                        pluginInfo.getPluginId(),
+                        fillAction(
+                                DeviceStateChange.builder()
+                                        .state(DeviceState.OFFLINE)
+                                        .build()
+                                , device.getProductKey(), device.getDeviceName()
+                        )
+                );
+                DEVICE_ONLINE.remove(device.getDeviceName());
+            }
 
             // ack the subscriptions request
             endpoint.unsubscribeAcknowledge(unsubscribe.messageId());
@@ -241,16 +253,13 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                 return;
             }
 
-            String[] topicParts = topic.split("/");
-            if (topicParts.length < 5) {
+            Device device = getDevice(topic);
+            if (device == null) {
                 return;
             }
 
-            //网关上线
-            online(productKey, deviceName);
-
-            String topicPk = topicParts[2];
-            String topicDn = topicParts[3];
+            //有消息上报-设备上线
+            online(device.getProductKey(), device.getDeviceName());
 
             if (!MQTT_CONNECT_POOL.get(clientId)) {
                 //保存设备与连接关系
@@ -271,16 +280,18 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
 
                 if ("thing.lifetime.register".equalsIgnoreCase(method)) {
                     //子设备注册
+                    String subPk = params.getString("productKey");
+                    String subDn = params.getString("deviceName");
                     ActionResult regResult = thingService.post(
                             pluginInfo.getPluginId(),
                             fillAction(
                                     DeviceRegister.builder()
-                                            .productKey(params.getString("productKey"))
-                                            .deviceName(params.getString("deviceName"))
+                                            .productKey(subPk)
+                                            .deviceName(subDn)
                                             .model(params.getString("model"))
                                             .version("1.0")
                                             .build()
-                                    , productKey, deviceName
+                                    , subPk, subDn
                             )
                     );
                     if (regResult.getCode() == 0) {
@@ -294,16 +305,12 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                 }
 
                 if ("thing.event.property.post".equalsIgnoreCase(method)) {
-                    //设备上线处理
-                    online(topicPk, topicDn);
                     //属性上报
                     action = PropertyReport.builder()
                             .params(params.getMap())
                             .build();
                     reply(endpoint, topic, payload);
                 } else if (method.startsWith("thing.event.")) {
-                    //设备上线处理
-                    online(topicPk, topicDn);
                     //事件上报
                     action = EventReport.builder()
                             .name(method.replace("thing.event.", ""))
@@ -312,8 +319,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                             .build();
                     reply(endpoint, topic, payload);
                 } else if (method.startsWith("thing.service.") && method.endsWith("_reply")) {
-                    //设备上线处理
-                    online(topicPk, topicDn);
                     //服务回复
                     action = ServiceReply.builder()
                             .name(method.replaceAll("thing\\.service\\.(.*)_reply", "$1"))
@@ -326,8 +331,8 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                     return;
                 }
                 action.setId(payload.getString("id"));
-                action.setProductKey(topicPk);
-                action.setDeviceName(topicDn);
+                action.setProductKey(device.getProductKey());
+                action.setDeviceName(device.getDeviceName());
                 action.setTime(System.currentTimeMillis());
                 thingService.post(pluginInfo.getPluginId(), action);
             } catch (Throwable e) {
@@ -417,4 +422,22 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
         result.onSuccess(integer -> log.info("publish success,topic:{},payload:{}", topic, msg));
     }
 
+    public Device getDevice(String topic) {
+        String[] topicParts = topic.split("/");
+        if (topicParts.length < 5) {
+            return null;
+        }
+        return new Device(topicParts[2], topicParts[3]);
+    }
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Device {
+
+        private String productKey;
+
+        private String deviceName;
+    }
 }
