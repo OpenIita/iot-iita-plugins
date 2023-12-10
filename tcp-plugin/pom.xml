@@ -9,6 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <version>1.0.3</version>
     <artifactId>tcp-plugin</artifactId>
 
     <dependencies>
@@ -57,13 +58,13 @@
             <plugin>
                 <groupId>com.gitee.starblues</groupId>
                 <artifactId>spring-brick-maven-packager</artifactId>
-                <version>${spring-brick.version}</version>
+                <version>${spring-brick-package.version}</version>
                 <configuration>
                     <mode>${plugin.build.mode}</mode>
                     <pluginInfo>
                         <id>tcp-plugin</id>
                         <bootstrapClass>cc.iotkit.plugins.tcp.Application</bootstrapClass>
-                        <version>${project.version}</version>
+                        <version>1.0.3</version>
                         <provider>iita</provider>
                         <description>tcp示例插件</description>
                         <configFileName>application.yml</configFileName>

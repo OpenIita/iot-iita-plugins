@@ -62,10 +62,9 @@ public class TcpPlugin implements PluginCloseListener, IPlugin {
             }));
             future.onFailure(Throwable::printStackTrace);
         } catch (Throwable e) {
-            e.printStackTrace();
+            log.error("init tcp plugin error", e);
         }
     }
-
 
     @SneakyThrows
     @Override

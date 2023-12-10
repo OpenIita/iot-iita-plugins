@@ -1,6 +1,5 @@
 plugin:
   runMode: dev
-#  runMode: prod
   mainPackage: cc.iotkit.plugin
 
 tcp:

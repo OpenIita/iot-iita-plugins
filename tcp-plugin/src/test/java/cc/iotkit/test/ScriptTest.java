@@ -13,7 +13,7 @@ public class ScriptTest {
 
     @Before
     public void init() {
-        scriptEngine = new LocalPluginScript("test.js").getScriptEngine("");
+        scriptEngine = new LocalPluginScript("script.js").getScriptEngine("");
     }
 
     @Test

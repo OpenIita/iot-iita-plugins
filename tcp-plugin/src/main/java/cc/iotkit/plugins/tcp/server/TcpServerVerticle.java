@@ -1,7 +1,6 @@
 package cc.iotkit.plugins.tcp.server;
 
 
-import cc.iotkit.common.enums.ErrCode;
 import cc.iotkit.common.exception.BizException;
 import cc.iotkit.plugin.core.IPluginScript;
 import cc.iotkit.plugin.core.thing.IThingService;
@@ -34,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,8 +77,7 @@ public class TcpServerVerticle extends AbstractVerticle {
     private IThingService thingService;
 
     @Override
-    public void start() throws Exception {
-        initConfig();
+    public void start() {
         initTcpServer();
         log.info("init tcp server failed");
     }
@@ -91,7 +90,9 @@ public class TcpServerVerticle extends AbstractVerticle {
     /**
      * 创建配置文件
      */
+    @PostConstruct
     public void initConfig() {
+        log.info("initConfig:{}", pluginScript.getClass().getName());
         //获取脚本引擎
         scriptEngine = pluginScript.getScriptEngine(pluginInfo.getPluginId());
         if (scriptEngine == null) {

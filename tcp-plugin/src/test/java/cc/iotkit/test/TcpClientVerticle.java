@@ -97,7 +97,7 @@ public class TcpClientVerticle extends AbstractVerticle {
                         .scheduleWithFixedDelay(this::heartbeat, 10, 30, TimeUnit.SECONDS);
                 //随机上报数据
                 ThreadUtil.newScheduled(1, "reportData")
-                        .scheduleWithFixedDelay(this::reportData, 20, 3, TimeUnit.SECONDS);
+                        .scheduleWithFixedDelay(this::reportData, 20, 1, TimeUnit.SECONDS);
             }
         }
     }
