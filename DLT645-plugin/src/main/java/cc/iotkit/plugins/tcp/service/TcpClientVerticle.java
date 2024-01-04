@@ -69,19 +69,19 @@ public class TcpClientVerticle extends AbstractVerticle {
         netClient.connect(config.getPort(), config.getHost(), result -> {
             System.out.println("connect result:"+JsonUtils.toJsonString(result));
             if (result.succeeded()) {
-                System.out.println("connect dlt645 server success");
+                log.info("connect dlt645 server success");
                 socket = result.result();
                 stateChange(DeviceState.ONLINE);
                 DLT645Analysis.inst().getTemplateByDIn(DLT645Constant.PRO_VER_2007);
                 socket.handler(data->{
                     String hexStr= ByteUtils.byteArrayToHexString(data.getBytes(),false);
-                    System.out.println("Received message:"+hexStr);
+                    log.info("Received message:{}", hexStr);
                     Map<String, Object> ret = DLT645Analysis.unPackCmd2Map(ByteUtils.hexStringToByteArray(hexStr));
                     //获取功能码
                     Object func = ret.get(DLT645Analysis.FUN);
                     DLT645FunCode funCode = DLT645FunCode.decodeEntity((byte) func);
                     if(funCode.isError()){
-                        System.out.println("message erroe:"+hexStr);
+                        log.error("message erroe:{}", hexStr);
                         return;
                     }
 //                    //获取设备地址
