@@ -8,6 +8,7 @@
         <module>http-plugin</module>
         <module>modbus-plugin</module>
         <module>tcp-plugin</module>
+        <module>DLT645-plugin</module>
     </modules>
 
     <parent>

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "host",
+    "name": "服务端ip",
+    "type": "text",
+    "value": "0.0.0.0",
+    "desc": "服务端ip"
+  },
+  {
+    "id": "port",
+    "name": "服务端端口",
+    "type": "number",
+    "value": 1111,
+    "desc": "服务端端口"
+  }
+]
