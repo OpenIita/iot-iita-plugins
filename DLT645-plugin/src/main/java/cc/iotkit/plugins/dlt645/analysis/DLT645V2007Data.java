@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.tcp.analysis;
+package cc.iotkit.plugins.dlt645.analysis;
 
 import lombok.Getter;
 import lombok.Setter;

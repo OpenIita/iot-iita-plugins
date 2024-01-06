@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.tcp.constants;
+package cc.iotkit.plugins.dlt645.constants;
 
 /**
  * @Author：tfd

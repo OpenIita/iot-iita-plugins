@@ -31,17 +31,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-core</artifactId>
-            <version>5.8.18</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
-
     </dependencies>
 
     <profiles>
@@ -73,7 +62,7 @@
                     <mode>${plugin.build.mode}</mode>
                     <pluginInfo>
                         <id>DLT645-plugin</id>
-                        <bootstrapClass>cc.iotkit.plugins.tcp.Application</bootstrapClass>
+                        <bootstrapClass>cc.iotkit.plugins.dlt645.Application</bootstrapClass>
                         <version>1.0.3</version>
                         <provider>iita</provider>
                         <description>DLT645示例插件</description>

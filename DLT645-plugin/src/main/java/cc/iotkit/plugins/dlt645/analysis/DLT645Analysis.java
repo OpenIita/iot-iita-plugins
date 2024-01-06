@@ -1,11 +1,11 @@
-package cc.iotkit.plugins.tcp.analysis;
+package cc.iotkit.plugins.dlt645.analysis;
 
-import cc.iotkit.plugins.tcp.constants.DLT645Constant;
-import cc.iotkit.plugins.tcp.load.DLT645v1997CsvLoader;
-import cc.iotkit.plugins.tcp.load.DLT645v2007CsvLoader;
-import cc.iotkit.plugins.tcp.utils.ByteRef;
-import cc.iotkit.plugins.tcp.utils.BytesRef;
-import cc.iotkit.plugins.tcp.utils.ContainerUtils;
+import cc.iotkit.plugins.dlt645.constants.DLT645Constant;
+import cc.iotkit.plugins.dlt645.load.DLT645v1997CsvLoader;
+import cc.iotkit.plugins.dlt645.load.DLT645v2007CsvLoader;
+import cc.iotkit.plugins.dlt645.utils.ByteRef;
+import cc.iotkit.plugins.dlt645.utils.BytesRef;
+import cc.iotkit.plugins.dlt645.utils.ContainerUtils;
 
 import java.util.Collections;
 import java.util.HashMap;

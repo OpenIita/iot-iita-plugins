@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.tcp.service;
+package cc.iotkit.plugins.dlt645.service;
 
 import cc.iotkit.plugin.core.thing.IDevice;
 import cc.iotkit.plugin.core.thing.actions.ActionResult;
@@ -6,7 +6,7 @@ import cc.iotkit.plugin.core.thing.actions.down.DeviceConfig;
 import cc.iotkit.plugin.core.thing.actions.down.PropertyGet;
 import cc.iotkit.plugin.core.thing.actions.down.PropertySet;
 import cc.iotkit.plugin.core.thing.actions.down.ServiceInvoke;
-import cc.iotkit.plugins.tcp.analysis.DLT645Converter;
+import cc.iotkit.plugins.dlt645.analysis.DLT645Converter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

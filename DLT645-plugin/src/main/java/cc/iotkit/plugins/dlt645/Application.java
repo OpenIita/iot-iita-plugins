@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.tcp;
+package cc.iotkit.plugins.dlt645;
 
 import com.gitee.starblues.bootstrap.SpringPluginBootstrap;
 import com.gitee.starblues.bootstrap.annotation.OneselfConfig;
@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @Author：tfd
  * @Date：2023/12/14 16:25
  */
-@SpringBootApplication(scanBasePackages = {"cc.iotkit.plugin.core", "cc.iotkit.plugins.tcp"})
+@SpringBootApplication(scanBasePackages = {"cc.iotkit.plugin.core", "cc.iotkit.plugins.dlt645"})
 @OneselfConfig(mainConfigFileName = {"application.yml"})
 @EnableConfigurationProperties
 @EnableScheduling

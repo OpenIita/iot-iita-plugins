@@ -1,12 +1,11 @@
-package cc.iotkit.plugins.tcp.load;
+package cc.iotkit.plugins.dlt645.load;
 
-import cc.iotkit.plugins.tcp.analysis.DLT645Data;
-import cc.iotkit.plugins.tcp.analysis.DLT645DataFormat;
-import cc.iotkit.plugins.tcp.analysis.DLT645V2007Data;
+import cc.iotkit.plugins.dlt645.analysis.DLT645Data;
+import cc.iotkit.plugins.dlt645.analysis.DLT645DataFormat;
+import cc.iotkit.plugins.dlt645.analysis.DLT645V1997Data;
 import cn.hutool.core.text.csv.CsvReader;
 import cn.hutool.core.text.csv.CsvUtil;
 import cn.hutool.core.util.CharsetUtil;
-import io.vertx.core.AbstractVerticle;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,25 +19,24 @@ import java.util.List;
  * @Date：2023/12/13 17:59
  */
 @Slf4j
-public class DLT645v2007CsvLoader extends AbstractVerticle {
-
+public class DLT645v1997CsvLoader {
     /**
      * 从CSV文件中装载映射表
      *
      */
     public List<DLT645Data> loadCsvFile() {
         CsvReader csvReader = CsvUtil.getReader();
-        InputStreamReader dataReader=new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("DLT645-2007.csv"),CharsetUtil.CHARSET_GBK);
+        InputStreamReader dataReader=new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("DLT645-1997.csv"),CharsetUtil.CHARSET_GBK);
         List<JDecoderValueParam> rows = csvReader.read(dataReader, JDecoderValueParam.class);
         List<DLT645Data> list = new ArrayList<>();
         for (JDecoderValueParam jDecoderValueParam : rows) {
             try {
-                DLT645V2007Data entity = new DLT645V2007Data();
+                DLT645V1997Data entity = new DLT645V1997Data();
                 entity.setName(jDecoderValueParam.getName());
-                entity.setDi0((byte) Integer.parseInt(jDecoderValueParam.di0, 16));
-                entity.setDi1((byte) Integer.parseInt(jDecoderValueParam.di1, 16));
-                entity.setDi2((byte) Integer.parseInt(jDecoderValueParam.di2, 16));
-                entity.setDi3((byte) Integer.parseInt(jDecoderValueParam.di3, 16));
+                entity.setDi1h((byte) Integer.parseInt(jDecoderValueParam.di1h, 16));
+                entity.setDi1l((byte) Integer.parseInt(jDecoderValueParam.di1l, 16));
+                entity.setDi0h((byte) Integer.parseInt(jDecoderValueParam.di0h, 16));
+                entity.setDi0l((byte) Integer.parseInt(jDecoderValueParam.di0l, 16));
                 entity.setLength(jDecoderValueParam.length);
                 entity.setUnit(jDecoderValueParam.unit);
                 entity.setRead(Boolean.parseBoolean(jDecoderValueParam.read));
@@ -62,10 +60,10 @@ public class DLT645v2007CsvLoader extends AbstractVerticle {
 
     @Data
     public static class JDecoderValueParam implements Serializable {
-        private String di0;
-        private String di1;
-        private String di2;
-        private String di3;
+        private String di1h;
+        private String di1l;
+        private String di0h;
+        private String di0l;
         /**
          * 编码格式
          */

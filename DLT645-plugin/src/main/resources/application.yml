@@ -1,7 +1,7 @@
 plugin:
-  runMode: dev
+  runMode: prod
   mainPackage: cc.iotkit.plugin
 
 tcp:
-  host: 25on621889.goho.co
+  host: xxx
   port: 43161

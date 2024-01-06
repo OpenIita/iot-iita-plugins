@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.tcp.utils;
+package cc.iotkit.plugins.dlt645.utils;
 
 import lombok.AccessLevel;
 import lombok.Getter;

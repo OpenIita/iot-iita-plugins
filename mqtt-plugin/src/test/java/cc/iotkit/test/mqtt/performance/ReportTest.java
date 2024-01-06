@@ -41,7 +41,7 @@ public class ReportTest {
             Mqtt.brokerHost = args[0];
         }
 
-        int total = 10;
+        int total = 12;
         if (args.length > 1) {
             total = Integer.parseInt(args[1]);
         }
@@ -68,7 +68,7 @@ public class ReportTest {
                         return;
                     }
 
-                    //设备上线后添加上报定时任务
+                    //设备上线后添32加上报定时任务
                     ReportTask reportTask = new ReportTask(gateway.getClient());
                     reportTask.addTask(String.format("/sys/%s/%s/s/event/property/post",
                                     pk, device.getDeviceName()),

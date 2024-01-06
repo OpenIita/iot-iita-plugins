@@ -1,7 +1,7 @@
-package cc.iotkit.plugins.tcp.analysis;
+package cc.iotkit.plugins.dlt645.analysis;
 
-import cc.iotkit.plugins.tcp.constants.DLT645Constant;
-import cc.iotkit.plugins.tcp.utils.ByteUtils;
+import cc.iotkit.plugins.dlt645.constants.DLT645Constant;
+import cc.iotkit.plugins.dlt645.utils.ByteUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 

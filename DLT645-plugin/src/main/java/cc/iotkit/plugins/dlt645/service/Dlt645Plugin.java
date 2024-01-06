@@ -1,8 +1,8 @@
-package cc.iotkit.plugins.tcp.service;
+package cc.iotkit.plugins.dlt645.service;
 
 import cc.iotkit.common.utils.JsonUtils;
 import cc.iotkit.plugin.core.IPluginConfig;
-import cc.iotkit.plugins.tcp.conf.TcpClientConfig;
+import cc.iotkit.plugins.dlt645.conf.TcpClientConfig;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.gitee.starblues.bootstrap.annotation.AutowiredType;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-public class TcpPlugin  implements PluginCloseListener {
+public class Dlt645Plugin implements PluginCloseListener {
 
     @Autowired
     private PluginInfo pluginInfo;

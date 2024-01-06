@@ -79,7 +79,6 @@ public class TcpServerVerticle extends AbstractVerticle {
     @Override
     public void start() {
         initTcpServer();
-        log.info("init tcp server failed");
     }
 
     @Override

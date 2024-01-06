@@ -1,4 +1,4 @@
-package cc.iotkit.plugins.tcp.conf;
+package cc.iotkit.plugins.dlt645.conf;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
