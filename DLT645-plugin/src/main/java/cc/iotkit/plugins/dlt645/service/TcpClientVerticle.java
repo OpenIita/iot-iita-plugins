@@ -1,6 +1,5 @@
 package cc.iotkit.plugins.dlt645.service;
 
-import cc.iotkit.common.utils.JsonUtils;
 import cc.iotkit.plugin.core.thing.IThingService;
 import cc.iotkit.plugin.core.thing.actions.DeviceState;
 import cc.iotkit.plugin.core.thing.actions.IDeviceAction;
@@ -57,6 +56,8 @@ public class TcpClientVerticle extends AbstractVerticle {
 
     private int connectState = 0;
 
+    private long timerID;
+
     @Override
     public void start() {
         log.info("init start");
@@ -74,10 +75,8 @@ public class TcpClientVerticle extends AbstractVerticle {
         options.setReconnectAttempts(Integer.MAX_VALUE);
         options.setReconnectInterval(20000L);
         netClient = vertx.createNetClient(options);
-        log.info("start1 connect->" + config.getHost() + ":" + config.getPort());
         netClient.connect(config.getPort(), config.getHost())
                 .onComplete(result -> {
-                    System.out.println("connect result:" + JsonUtils.toJsonString(result));
                     if (result.succeeded()) {
                         connectState = 2;
                         log.info("connect dlt645 server success");
@@ -91,7 +90,7 @@ public class TcpClientVerticle extends AbstractVerticle {
                             Object func = ret.get(DLT645Analysis.FUN);
                             DLT645FunCode funCode = DLT645FunCode.decodeEntity((byte) func);
                             if (funCode.isError()) {
-                                log.error("message erroe:{}", hexStr);
+                                log.info("message erroe:{}", hexStr);
                                 return;
                             }
                             //获取设备地址
@@ -100,25 +99,30 @@ public class TcpClientVerticle extends AbstractVerticle {
                             ByteUtils.byteInvertedOrder(adrrTmp, addr);
                             //获取数据
                             byte[] dat = (byte[]) ret.get(DLT645Analysis.DAT);
+                            String strAddr=ByteUtils.byteArrayToHexString(addr,false);
                             DLT645V2007Data dataEntity = new DLT645V2007Data();
                             dataEntity.decodeValue(dat, DLT645Analysis.din2entity);
                             Map<String, Object> params = new HashMap<>();
                             params.put("p" + dataEntity.getKey(), dataEntity.getValue());//数据标识
                             thingService.post(pluginInfo.getPluginId(),
-                                    applyPkDn(PropertyReport.builder()
+                                    PropertyReport.builder().deviceName(strAddr).productKey("PwMfpXmp4ZWkGahn")
                                             .params(params)
                                             .build()
-                                    )
                             );
                         }).closeHandler(res -> {
                                     connectState = 0;
+                                    vertx.cancelTimer(timerID);
                                     log.info("dlt645 tcp connection closed!");
                                     stateChange(DeviceState.OFFLINE);
                                 }
                         ).exceptionHandler(res -> {
                             connectState = 0;
+                            vertx.cancelTimer(timerID);
                             log.info("dlt645 tcp connection exce!");
                             stateChange(DeviceState.OFFLINE);
+                        });
+                        timerID = vertx.setPeriodic(config.getInterval(), t -> {
+                            readDataTask();
                         });
                     } else {
                         connectState = 0;
@@ -132,7 +136,6 @@ public class TcpClientVerticle extends AbstractVerticle {
         ;
     }
 
-    @Scheduled(initialDelay = 5, fixedRate = 60, timeUnit = TimeUnit.SECONDS)
     private void readDataTask() {
         log.info("readData:" + socket);
         if (socket != null) {
@@ -146,6 +149,8 @@ public class TcpClientVerticle extends AbstractVerticle {
         if (netClient != null) {
             netClient.close();
         }
+        vertx.cancelTimer(timerID);
+        connectState = 0;
         super.stop();
     }
 
@@ -160,7 +165,7 @@ public class TcpClientVerticle extends AbstractVerticle {
 
     private IDeviceAction applyPkDn(IDeviceAction action) {
         action.setProductKey("BRD3x4fkKxkaxXFt");
-        action.setDeviceName("123456789123");
+        action.setDeviceName("WG123456");
         return action;
     }
 

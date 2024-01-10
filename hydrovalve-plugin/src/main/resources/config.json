@@ -10,14 +10,14 @@
     "id": "port",
     "name": "服务端端口",
     "type": "number",
-    "value": 43161,
+    "value": 38807,
     "desc": "服务端端口"
   },
   {
     "id": "interval",
     "name": "采集频率",
     "type": "number",
-    "value": 10000,
+    "value": 20000,
     "desc": "采集频率"
   }
 ]

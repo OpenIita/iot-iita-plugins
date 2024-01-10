@@ -9,6 +9,7 @@
         <module>modbus-plugin</module>
         <module>tcp-plugin</module>
         <module>DLT645-plugin</module>
+        <module>hydrovalve-plugin</module>
     </modules>
 
     <parent>
