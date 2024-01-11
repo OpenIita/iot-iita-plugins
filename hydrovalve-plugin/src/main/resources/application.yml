@@ -3,6 +3,6 @@ plugin:
   mainPackage: cc.iotkit.plugin
 
 hydrovalve:
-  host: 25on621889.goho.co
+  host: xxxx
   port: 38807
   interval: 20000

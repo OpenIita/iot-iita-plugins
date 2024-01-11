@@ -1,5 +1,5 @@
 plugin:
-  runMode: dev
+  runMode: prod
   mainPackage: cc.iotkit.plugin
 
 mqtt:

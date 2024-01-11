@@ -52,7 +52,7 @@
             <plugin>
                 <groupId>com.gitee.starblues</groupId>
                 <artifactId>spring-brick-maven-packager</artifactId>
-                <version>${spring-brick-package.version}</version>
+                <version>${spring-brick.version}</version>
                 <configuration>
                     <mode>${plugin.build.mode}</mode>
                     <pluginInfo>
@@ -64,7 +64,7 @@
                         <configFileName>application.yml</configFileName>
                     </pluginInfo>
                     <prodConfig>
-                        <packageType>jar</packageType>
+                        <packageType>zip</packageType>
                     </prodConfig>
                 </configuration>
                 <executions>

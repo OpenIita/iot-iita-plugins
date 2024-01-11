@@ -70,19 +70,23 @@ public class TcpPlugin implements PluginCloseListener, IPlugin {
     @Override
     public void close(GenericApplicationContext applicationContext, PluginInfo pluginInfo, PluginCloseType closeType) {
         log.info("plugin close,type:{},pluginId:{}", closeType, pluginInfo.getPluginId());
-        if (deployedId != null) {
-            CountDownLatch wait = new CountDownLatch(1);
-            Future<Void> future = vertx.undeploy(deployedId);
-            future.onSuccess(unused -> {
-                log.info("tcp plugin stopped success");
-                wait.countDown();
-            });
-            future.onFailure(h -> {
-                log.info("tcp plugin stopped failed");
-                h.printStackTrace();
-                wait.countDown();
-            });
-            wait.await(5, TimeUnit.SECONDS);
+        try {
+            if (deployedId != null) {
+                CountDownLatch wait = new CountDownLatch(1);
+                Future<Void> future = vertx.undeploy(deployedId);
+                future.onSuccess(unused -> {
+                    log.info("tcp plugin stopped success");
+                    wait.countDown();
+                });
+                future.onFailure(h -> {
+                    log.info("tcp plugin stopped failed");
+                    h.printStackTrace();
+                    wait.countDown();
+                });
+                wait.await(5, TimeUnit.SECONDS);
+            }
+        } catch (Throwable e) {
+            log.error("close plugin error", e);
         }
     }
 

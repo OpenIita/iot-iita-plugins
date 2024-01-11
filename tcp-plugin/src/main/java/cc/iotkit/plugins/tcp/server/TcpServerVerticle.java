@@ -37,6 +37,7 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -77,12 +78,13 @@ public class TcpServerVerticle extends AbstractVerticle {
     private IThingService thingService;
 
     @Override
-    public void start() {
-        initTcpServer();
-    }
-
-    @Override
     public void stop() {
+        if (netServer != null) {
+            netServer.close(rst -> {
+                log.info("tcp server close:{}", rst.succeeded());
+            });
+        }
+
         log.info("tcp server stopped");
     }
 
@@ -97,6 +99,7 @@ public class TcpServerVerticle extends AbstractVerticle {
         if (scriptEngine == null) {
             throw new BizException("script engine is null");
         }
+        Executors.newSingleThreadScheduledExecutor().schedule(this::initTcpServer, 3, TimeUnit.SECONDS);
     }
 
 
