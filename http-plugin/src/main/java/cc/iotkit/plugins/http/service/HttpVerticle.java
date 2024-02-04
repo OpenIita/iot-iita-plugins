@@ -38,6 +38,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * mqtt官方协议文档：
@@ -65,6 +67,10 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
 
     @Override
     public void start() {
+        Executors.newSingleThreadScheduledExecutor().schedule(this::initHttpServer, 3, TimeUnit.SECONDS);
+    }
+
+    private void initHttpServer(){
         httpServer = vertx.createHttpServer();
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create()).handler(this);

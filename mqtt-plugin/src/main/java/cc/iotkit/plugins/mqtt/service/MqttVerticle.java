@@ -47,6 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * mqtt官方协议文档：
@@ -78,6 +80,10 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
 
     @Override
     public void start() {
+        Executors.newSingleThreadScheduledExecutor().schedule(this::initMqttServer, 3, TimeUnit.SECONDS);
+    }
+
+    private void initMqttServer(){
         MqttServerOptions options = new MqttServerOptions()
                 .setPort(config.getPort());
         if (config.isSsl()) {

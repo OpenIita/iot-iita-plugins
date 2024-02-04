@@ -181,8 +181,10 @@ public class TcpServerVerticle extends AbstractVerticle {
                     int code = data.getCode();
                     if (code == DataPackage.CODE_REGISTER) {
                         clientMap.put(addr, client);
+                        heartbeatDevice.remove(addr);
                         //设备注册
-                        String pk = dnToPk.put(addr, new String(data.getPayload()));
+                        String pk = new String(data.getPayload());
+                        dnToPk.put(addr, pk);
                         ActionResult rst = thingService.post(pluginInfo.getPluginId(), DeviceRegister.builder()
                                 .id(IdUtil.simpleUUID())
                                 .productKey(pk)
