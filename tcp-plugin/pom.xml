@@ -5,11 +5,11 @@
     <parent>
         <artifactId>iot-iita-plugins</artifactId>
         <groupId>cc.iotkit.plugins</groupId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <artifactId>tcp-plugin</artifactId>
 
     <dependencies>
@@ -64,7 +64,7 @@
                     <pluginInfo>
                         <id>tcp-plugin</id>
                         <bootstrapClass>cc.iotkit.plugins.tcp.Application</bootstrapClass>
-                        <version>1.0.3</version>
+                        <version>${project.version}</version>
                         <provider>iita</provider>
                         <description>tcp示例插件</description>
                         <configFileName>application.yml</configFileName>

@@ -14,13 +14,13 @@ import cc.iotkit.common.exception.BizException;
 import cc.iotkit.common.utils.CodecUtil;
 import cc.iotkit.common.utils.StringUtils;
 import cc.iotkit.common.utils.UniqueIdUtil;
-import cc.iotkit.model.product.Product;
 import cc.iotkit.plugin.core.thing.IThingService;
 import cc.iotkit.plugin.core.thing.actions.ActionResult;
 import cc.iotkit.plugin.core.thing.actions.DeviceState;
 import cc.iotkit.plugin.core.thing.actions.EventLevel;
 import cc.iotkit.plugin.core.thing.actions.IDeviceAction;
 import cc.iotkit.plugin.core.thing.actions.up.*;
+import cc.iotkit.plugin.core.thing.model.ThingProduct;
 import cc.iotkit.plugins.mqtt.conf.MqttConfig;
 import com.gitee.starblues.bootstrap.annotation.AutowiredType;
 import com.gitee.starblues.core.PluginInfo;
@@ -138,7 +138,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             return;
         }
 
-        Product product = thingService.getProduct(productKey);
+        ThingProduct product = thingService.getProduct(productKey);
         if (product == null) {
             log.error("获取产品信息失败,productKey:{}", productKey);
             endpoint.reject(MqttConnectReturnCode.CONNECTION_REFUSED_BAD_USERNAME_OR_PASSWORD);

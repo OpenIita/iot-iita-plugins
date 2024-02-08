@@ -5,12 +5,12 @@
     <parent>
         <artifactId>iot-iita-plugins</artifactId>
         <groupId>cc.iotkit.plugins</groupId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>http-plugin</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <dependencies>
 
@@ -64,7 +64,7 @@
                         <configFileName>application.yml</configFileName>
                     </pluginInfo>
                     <prodConfig>
-                        <packageType>zip</packageType>
+                        <packageType>jar</packageType>
                     </prodConfig>
                 </configuration>
                 <executions>
