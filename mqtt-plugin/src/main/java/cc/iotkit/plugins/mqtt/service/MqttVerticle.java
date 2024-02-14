@@ -20,6 +20,7 @@ import cc.iotkit.plugin.core.thing.actions.DeviceState;
 import cc.iotkit.plugin.core.thing.actions.EventLevel;
 import cc.iotkit.plugin.core.thing.actions.IDeviceAction;
 import cc.iotkit.plugin.core.thing.actions.up.*;
+import cc.iotkit.plugin.core.thing.model.ThingDevice;
 import cc.iotkit.plugin.core.thing.model.ThingProduct;
 import cc.iotkit.plugins.mqtt.conf.MqttConfig;
 import com.gitee.starblues.bootstrap.annotation.AutowiredType;
@@ -35,9 +36,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.mqtt.*;
 import io.vertx.mqtt.messages.codes.MqttSubAckReasonCode;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -83,7 +82,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
         Executors.newSingleThreadScheduledExecutor().schedule(this::initMqttServer, 3, TimeUnit.SECONDS);
     }
 
-    private void initMqttServer(){
+    private void initMqttServer() {
         MqttServerOptions options = new MqttServerOptions()
                 .setPort(config.getPort());
         if (config.isSsl()) {
@@ -212,7 +211,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                 log.info("Subscription for {},with QoS {}", s.topicName(), s.qualityOfService());
                 try {
                     String topic = s.topicName();
-                    Device device = getDevice(topic);
+                    ThingDevice device = getDevice(topic);
                     //添加设备对应连接
                     endpointMap.put(device.getDeviceName(), endpoint);
                     online(device.getProductKey(), device.getDeviceName());
@@ -226,7 +225,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             endpoint.subscribeAcknowledge(subscribe.messageId(), reasonCodes, MqttProperties.NO_PROPERTIES);
         }).unsubscribeHandler(unsubscribe -> {
             for (String topic : unsubscribe.topics()) {
-                Device device = getDevice(topic);
+                ThingDevice device = getDevice(topic);
                 //删除设备对应连接
                 endpointMap.remove(device.getDeviceName());
                 //下线
@@ -259,7 +258,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                 return;
             }
 
-            Device device = getDevice(topic);
+            ThingDevice device = getDevice(topic);
             if (device == null) {
                 return;
             }
@@ -428,22 +427,15 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
         result.onSuccess(integer -> log.info("publish success,topic:{},payload:{}", topic, msg));
     }
 
-    public Device getDevice(String topic) {
+    public ThingDevice getDevice(String topic) {
         String[] topicParts = topic.split("/");
         if (topicParts.length < 5) {
             return null;
         }
-        return new Device(topicParts[2], topicParts[3]);
+        return ThingDevice.builder()
+                .productKey(topicParts[2])
+                .deviceName(topicParts[3])
+                .build();
     }
 
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Device {
-
-        private String productKey;
-
-        private String deviceName;
-    }
 }

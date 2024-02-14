@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * @author sjg
  */
-@SpringBootApplication(scanBasePackages = {"cc.iotkit.plugin.core", "cc.iotkit.plugins.modbus"})
+@SpringBootApplication(scanBasePackages = "cc.iotkit.plugins.modbus")
 @OneselfConfig(mainConfigFileName = {"application.yml"})
 @EnableConfigurationProperties
 @EnableScheduling

@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 /**
  * @author sjg
  */
-@SpringBootApplication(scanBasePackages = {"cc.iotkit.plugin.core", "cc.iotkit.plugins.http"})
+@SpringBootApplication(scanBasePackages = "cc.iotkit.plugins.http")
 @OneselfConfig(mainConfigFileName = {"application.yml"})
 @EnableConfigurationProperties
 public class Application extends SpringPluginBootstrap {

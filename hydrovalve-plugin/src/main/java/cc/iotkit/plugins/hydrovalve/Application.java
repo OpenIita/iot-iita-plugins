@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @Author：tfd
  * @Date：2024/1/8 14:57
  */
-@SpringBootApplication(scanBasePackages = {"cc.iotkit.plugin.core", "cc.iotkit.plugins.hydrovalve"})
+@SpringBootApplication(scanBasePackages = "cc.iotkit.plugins.hydrovalve")
 @OneselfConfig(mainConfigFileName = {"application.yml"})
 @EnableConfigurationProperties
 @EnableScheduling

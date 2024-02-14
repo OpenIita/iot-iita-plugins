@@ -10,7 +10,7 @@
         <module>tcp-plugin</module>
         <module>DLT645-plugin</module>
         <module>hydrovalve-plugin</module>
-<!--        <module>emqx-plugin</module>-->
+        <module>emqx-plugin</module>
     </modules>
 
     <parent>
