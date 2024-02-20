@@ -64,7 +64,8 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
     public void start() {
         Executors.newSingleThreadScheduledExecutor().schedule(this::initHttpServer, 3, TimeUnit.SECONDS);
     }
-    private void initHttpServer(){
+
+    private void initHttpServer() {
         httpServer = vertx.createHttpServer();
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create()).handler(this);
@@ -79,6 +80,9 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
 
     @Override
     public void stop() {
+        httpServer.close(rst -> {
+            log.info("http server close:{}", rst.succeeded());
+        });
     }
 
     @Override
@@ -153,6 +157,7 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
                                 .level(EventLevel.INFO)
                                 .name(parts[3])
                                 .params(payload.getJsonObject("params").getMap())
+                                .time(System.currentTimeMillis())
                                 .build()
                 );
                 end(response);
@@ -169,6 +174,7 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
                                     .productKey(productKey)
                                     .deviceName(deviceName)
                                     .params(payload.getJsonObject("params").getMap())
+                                    .time(System.currentTimeMillis())
                                     .build()
                     );
                     end(response);
