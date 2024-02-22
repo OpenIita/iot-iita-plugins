@@ -92,6 +92,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                             .setCertPath(config.getSslCert()));
         }
         options.setUseWebSocket(config.isUseWebSocket());
+        options.setTcpKeepAlive(true);
 
         mqttServer = MqttServer.create(vertx, options);
         mqttServer.endpointHandler(this).listen(ar -> {
