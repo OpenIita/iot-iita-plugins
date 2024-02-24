@@ -200,16 +200,22 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
                         //子设备注册
                         String subPk = params.getString("productKey");
                         String subDn = params.getString("deviceName");
+                        String subModel = params.getString("model");
                         ActionResult regResult = thingService.post(
                                 pluginInfo.getPluginId(),
                                 fillAction(
-                                        DeviceRegister.builder()
-                                                .productKey(subPk)
-                                                .deviceName(subDn)
-                                                .model(params.getString("model"))
+                                        SubDeviceRegister.builder()
+                                                .productKey(device.getProductKey())
+                                                .deviceName(device.getDeviceName())
                                                 .version("1.0")
+                                                .subs(List.of(
+                                                        DeviceRegister.builder()
+                                                                .productKey(subPk)
+                                                                .deviceName(subDn)
+                                                                .model(subModel)
+                                                                .build()
+                                                ))
                                                 .build()
-                                        , subPk, subDn
                                 )
                         );
                         if (regResult.getCode() == 0) {
@@ -289,9 +295,10 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
         thingService.post(
                 pluginInfo.getPluginId(),
                 fillAction(DeviceStateChange.builder()
-                                .state(DeviceState.ONLINE)
-                                .build()
-                        , pk, dn
+                        .productKey(pk)
+                        .deviceName(dn)
+                        .state(DeviceState.ONLINE)
+                        .build()
                 )
         );
         DEVICE_ONLINE.put(dn, true);
@@ -306,19 +313,18 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
             thingService.post(
                     pluginInfo.getPluginId(),
                     fillAction(DeviceStateChange.builder()
-                                    .state(DeviceState.OFFLINE)
-                                    .build()
-                            , pkDn[0], pkDn[1]
+                            .productKey(pkDn[0])
+                            .deviceName(pkDn[1])
+                            .state(DeviceState.OFFLINE)
+                            .build()
                     )
             );
             DEVICE_ONLINE.remove(pkDn[1]);
         }
     }
 
-    private IDeviceAction fillAction(IDeviceAction action, String productKey, String deviceName) {
+    private IDeviceAction fillAction(IDeviceAction action) {
         action.setId(UniqueIdUtil.newRequestId());
-        action.setProductKey(productKey);
-        action.setDeviceName(deviceName);
         action.setTime(System.currentTimeMillis());
         return action;
     }

@@ -10,9 +10,14 @@ package cc.iotkit.plugins.emqx.service;
  */
 
 import cc.iotkit.common.utils.CodecUtil;
+import cc.iotkit.common.utils.UniqueIdUtil;
 import cc.iotkit.plugin.core.thing.IThingService;
+import cc.iotkit.plugin.core.thing.actions.ActionResult;
+import cc.iotkit.plugin.core.thing.actions.up.DeviceRegister;
 import cc.iotkit.plugin.core.thing.model.ThingProduct;
 import com.gitee.starblues.bootstrap.annotation.AutowiredType;
+import com.gitee.starblues.core.PluginInfo;
+import io.netty.handler.codec.mqtt.MqttConnectReturnCode;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
@@ -42,6 +47,9 @@ public class AuthVerticle extends AbstractVerticle {
     @Autowired
     @AutowiredType(AutowiredType.Type.MAIN_PLUGIN)
     private IThingService thingService;
+
+    @Autowired
+    private PluginInfo pluginInfo;
 
     @Override
     public void start() {
@@ -80,6 +88,7 @@ public class AuthVerticle extends AbstractVerticle {
 
                 String productKey = parts[0];
                 String deviceName = parts[1];
+                String gwModel = parts[2];
                 if (!username.equals(deviceName)) {
                     log.error("username:{}不正确", deviceName);
                     httpResult(rc.response(), 403);
@@ -100,9 +109,27 @@ public class AuthVerticle extends AbstractVerticle {
                     return;
                 }
 
+                //网关设备注册
+                ActionResult result = thingService.post(
+                        pluginInfo.getPluginId(),
+                        DeviceRegister.builder()
+                                .productKey(productKey)
+                                .deviceName(deviceName)
+                                .model(gwModel)
+                                .version("1.0")
+                                .id(UniqueIdUtil.newRequestId())
+                                .time(System.currentTimeMillis())
+                                .build()
+                );
+                if (result.getCode() != 0) {
+                    log.error("设备注册失败:{}", result);
+                    httpResult(rc.response(), 403);
+                    return;
+                }
+
                 Set<String> devices = new HashSet<>();
-                devices.add(parts[0] + "," + parts[1]);
-                EmqxPlugin.CLIENT_DEVICE_MAP.putIfAbsent(parts[0] + parts[1], devices);
+                devices.add(productKey + "," + deviceName);
+                EmqxPlugin.CLIENT_DEVICE_MAP.putIfAbsent(productKey + deviceName, devices);
 
                 httpResult(rc.response(), 200);
             } catch (Throwable e) {
