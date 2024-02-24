@@ -73,7 +73,7 @@ public class HttpPlugin implements PluginCloseListener {
                 CountDownLatch wait = new CountDownLatch(1);
                 Future<Void> future = vertx.undeploy(deployedId);
                 future.onSuccess(unused -> {
-                    log.info("tcp plugin stopped success");
+                    log.info("http plugin stopped success");
                     wait.countDown();
                 });
                 future.onFailure(h -> {

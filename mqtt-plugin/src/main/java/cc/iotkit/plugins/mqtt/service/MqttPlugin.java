@@ -72,7 +72,7 @@ public class MqttPlugin implements PluginCloseListener, IPlugin {
                 CountDownLatch wait = new CountDownLatch(1);
                 Future<Void> future = vertx.undeploy(deployedId);
                 future.onSuccess(unused -> {
-                    log.info("tcp plugin stopped success");
+                    log.info("mqtt plugin stopped success");
                     wait.countDown();
                 });
                 future.onFailure(h -> {
