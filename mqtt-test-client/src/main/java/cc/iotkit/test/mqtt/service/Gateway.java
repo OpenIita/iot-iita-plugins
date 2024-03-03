@@ -10,8 +10,7 @@
 package cc.iotkit.test.mqtt.service;
 
 
-import cc.iotkit.common.utils.CodecUtil;
-import cc.iotkit.test.mqtt.config.Mqtt;
+import cc.iotkit.test.mqtt.config.MqttConfig;
 import cc.iotkit.test.mqtt.model.Request;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.vertx.core.AsyncResult;
@@ -49,8 +48,13 @@ public class Gateway extends Device {
 
     private boolean isConnecting;
 
-    public Gateway(String productKey, String productSecret, String deviceName) {
+    private boolean registered;
+
+    private MqttConfig mqttConfig;
+
+    public Gateway(MqttConfig mqttConfig,String productKey, String productSecret, String deviceName) {
         super(productKey, productSecret, deviceName, "GW01");
+        this.mqttConfig=mqttConfig;
     }
 
     @SneakyThrows
@@ -74,7 +78,7 @@ public class Gateway extends Device {
             isConnecting = true;
             MqttClientOptions options = new MqttClientOptions();
             options.setUsername(this.deviceName);
-            options.setPassword(CodecUtil.md5Str(getProductSecret() + clientId));
+            options.setPassword(DigestUtils.md5Hex(getProductSecret() + clientId));
             options.setCleanSession(true);
             options.setKeepAliveInterval(30);
             options.setClientId(clientId);
@@ -84,15 +88,20 @@ public class Gateway extends Device {
             client = MqttClient.create(Vertxs.getVertx(), options);
 
             CountDownLatch countDownLatch = new CountDownLatch(1);
-            client.connect(Mqtt.brokerPort, Mqtt.brokerHost, s -> {
+            client.connect(mqttConfig.getPort(), mqttConfig.getHost(), s -> {
                 if (s.succeeded()) {
                     log.info("mqtt connected,clientId:{}", clientId);
                     countDownLatch.countDown();
+                    registered = true;
                 } else {
                     log.info("mqtt connect failed,clientId:{}", clientId);
+                    countDownLatch.countDown();
                 }
             });
             countDownLatch.await();
+            if(!registered){
+                return;
+            }
 
             // 订阅
             String topic = String.format("/sys/%s/%s/c/#", productKey, deviceName);

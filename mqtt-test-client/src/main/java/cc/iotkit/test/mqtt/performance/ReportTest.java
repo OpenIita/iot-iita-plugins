@@ -9,14 +9,16 @@
  */
 package cc.iotkit.test.mqtt.performance;
 
-import cc.iotkit.test.mqtt.config.Mqtt;
+import cc.iotkit.test.mqtt.config.MqttConfig;
 import cc.iotkit.test.mqtt.model.Request;
 import cc.iotkit.test.mqtt.service.Gateway;
 import cc.iotkit.test.mqtt.service.ReportTask;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
-import java.io.IOException;
+import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -29,29 +31,23 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class ReportTest {
 
-    public static void main(String[] args) throws IOException {
+    @Autowired
+    private MqttConfig mqttConfig;
 
+    @Value("${start:0}")
+    private int start;
 
-        if (args.length == 0) {
-            Mqtt.brokerHost = "127.0.0.1";
-            Mqtt.brokerPort = 1883;
-//            Mqtt.brokerHost = "120.76.96.206";
-//            Mqtt.brokerHost = "172.16.1.109";
-        } else {
-            Mqtt.brokerHost = args[0];
-        }
+    @Value("${end:10}")
+    private int end;
 
-        int total = 12;
-        if (args.length > 1) {
-            total = Integer.parseInt(args[1]);
-        }
-
+    @PostConstruct
+    public void init() {
         ExecutorService executor = Executors.newCachedThreadPool();
-        for (int i = 0; i < total; i++) {
+        for (int i = start; i < end; i++) {
             int finalI = i;
             executor.submit(() -> {
                 log.info("start gateway " + (finalI + 1));
-                Gateway gateway = new Gateway("hbtgIA0SuVw9lxjB", "xdkKUymrEGSCYWswqCvSPyRSFvH5j7CU",
+                Gateway gateway = new Gateway(mqttConfig, "hbtgIA0SuVw9lxjB", "xdkKUymrEGSCYWswqCvSPyRSFvH5j7CU",
                         "TEST:GW:" + StringUtils.leftPad(finalI + "", 6, "0"));
 
                 gateway.addSubDevice("Rf4QSjbm65X45753", "xdkKUymrEGSCYWswqCvSPyRSFvH5j7CU",
@@ -88,6 +84,5 @@ public class ReportTest {
             });
         }
 
-        System.in.read();
     }
 }

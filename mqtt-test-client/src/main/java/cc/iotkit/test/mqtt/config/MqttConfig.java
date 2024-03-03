@@ -9,9 +9,18 @@
  */
 package cc.iotkit.test.mqtt.config;
 
-public class Mqtt {
 
-    public static String brokerHost;
-    public static int brokerPort = 1883;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Data
+@Component
+@ConfigurationProperties(prefix = "mqtt")
+public class MqttConfig {
+
+    private String host;
+
+    private int port = 1883;
 
 }
