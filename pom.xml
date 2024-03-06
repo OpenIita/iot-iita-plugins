@@ -11,6 +11,7 @@
         <module>DLT645-plugin</module>
         <module>hydrovalve-plugin</module>
         <module>emqx-plugin</module>
+        <module>websocket-plugin</module>
     </modules>
 
     <parent>

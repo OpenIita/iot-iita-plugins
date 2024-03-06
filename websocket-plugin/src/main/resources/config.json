@@ -1,0 +1,16 @@
+[
+  {
+    "id": "port",
+    "name": "端口",
+    "type": "number",
+    "value": 1662,
+    "desc": "websocket端口，默认为1662"
+  },
+  {
+    "id": "accessTokens",
+    "name": "token表",
+    "type": "json",
+    "value": "[{'tokenName':'test_token','tokenStr':'123456789'}]",
+    "desc": "token表，可多个"
+  }
+]

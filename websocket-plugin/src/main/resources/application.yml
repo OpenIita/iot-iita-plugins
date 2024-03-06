@@ -1,0 +1,7 @@
+plugin:
+  runMode: prod
+  mainPackage: cc.iotkit.plugin
+
+websocket:
+  port: 1662
+  accessTokens: [{"tokenName":"test_token","tokenStr":"123456789"}]
