@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,10 +65,10 @@ public class WebsocketVerticle extends AbstractVerticle {
 
     @Override
     public void start() {
-        Executors.newSingleThreadScheduledExecutor().schedule(this::initMqttServer, 3, TimeUnit.SECONDS);
+        Executors.newSingleThreadScheduledExecutor().schedule(this::initWsServer, 3, TimeUnit.SECONDS);
     }
 
-    private void initMqttServer() {
+    private void initWsServer() {
         HttpServerOptions options = new HttpServerOptions()
                 .setPort(config.getPort());
         if (config.isSsl()) {
@@ -186,11 +185,8 @@ public class WebsocketVerticle extends AbstractVerticle {
         }).listen(config.getPort(), server -> {
             if (server.succeeded()) {
                 log.info("webSocket server is listening on port " + config.getPort());
-                if(config.getAccessTokens()!=null){
-                    List<WebsocketConfig.AccessToken> tokenConfig= config.getAccessTokens();
-                    for (WebsocketConfig.AccessToken obj:tokenConfig) {
-                        tokens.put(obj.getTokenName(),obj.getTokenStr());
-                    }
+                if(config.getTokenKey()!=null&&config.getAccessToken()!=null){
+                        tokens.put(config.getTokenKey(),config.getAccessToken());
                 }
             } else {
                 log.error("webSocket server on starting the server", server.cause());
