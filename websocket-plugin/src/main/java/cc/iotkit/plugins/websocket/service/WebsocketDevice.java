@@ -31,7 +31,7 @@ public class WebsocketDevice implements IDevice {
     @Override
     public ActionResult propertyGet(PropertyGet action) {
         return send(
-                action.getDeviceName(),
+                getDeviceKey(action.getDeviceName(),action.getProductKey()),
                 new JsonObject()
                         .put("id", action.getId())
                         .put("method", "thing.service.property.get")
@@ -43,10 +43,10 @@ public class WebsocketDevice implements IDevice {
     @Override
     public ActionResult propertySet(PropertySet action) {
         return send(
-                action.getDeviceName(),
+                getDeviceKey(action.getDeviceName(),action.getProductKey()),
                 new JsonObject()
                         .put("id", action.getId())
-                        .put("method", "thing.service.property.set")
+                        .put("type", "call_service")
                         .put("params", action.getParams())
                         .toString()
         );
@@ -55,7 +55,7 @@ public class WebsocketDevice implements IDevice {
     @Override
     public ActionResult serviceInvoke(ServiceInvoke action) {
         return send(
-                action.getDeviceName(),
+                getDeviceKey(action.getDeviceName(),action.getProductKey()),
                 new JsonObject()
                         .put("id", action.getId())
                         .put("method", "thing.service." + action.getName())
@@ -64,10 +64,10 @@ public class WebsocketDevice implements IDevice {
         );
     }
 
-    private ActionResult send(String deviceName, String payload) {
+    private ActionResult send(String deviceKey, String payload) {
         try {
             websocketVerticle.send(
-                    deviceName,
+                    deviceKey,
                     payload
             );
             return ActionResult.builder().code(0).reason("").build();
@@ -76,6 +76,10 @@ public class WebsocketDevice implements IDevice {
         } catch (Exception e) {
             return ActionResult.builder().code(ErrCode.UNKNOWN_EXCEPTION.getKey()).reason(e.getMessage()).build();
         }
+    }
+
+    private String getDeviceKey(String deviceName, String productKey) {
+        return String.format("%s_%s", deviceName, productKey);
     }
 
 }
