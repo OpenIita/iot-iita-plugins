@@ -143,7 +143,7 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
 
             if ("event".equals(type)) {
                 //事件上报
-                if ("POST".equalsIgnoreCase(method)) {
+                if (!"POST".equalsIgnoreCase(method)) {
                     response.setStatusCode(500);
                     log.error("请求类型不正确，期望值:POST，实际值:{}", method);
                     end(response);
@@ -155,7 +155,7 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
                                 .productKey(productKey)
                                 .deviceName(deviceName)
                                 .level(EventLevel.INFO)
-                                .name(parts[3])
+                                .name(parts[5])
                                 .params(payload.getJsonObject("params").getMap())
                                 .time(System.currentTimeMillis())
                                 .build()
