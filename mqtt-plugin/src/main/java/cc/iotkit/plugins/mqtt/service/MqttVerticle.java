@@ -215,6 +215,9 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             endpointMap.remove(deviceName);
             MQTT_CONNECT_POOL.put(clientId, false);
             DEVICE_ONLINE.clear();
+        }).pingHandler(msg->{
+            // 心跳 ping
+            ping(productKey,deviceName);
         }).subscribeHandler(subscribe -> {
             List<MqttSubAckReasonCode> reasonCodes = new ArrayList<>();
             for (MqttTopicSubscription s : subscribe.topicSubscriptions()) {
@@ -416,6 +419,18 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
         if(mqttServer!=null) {
             mqttServer.close();
         }
+    }
+
+    private void ping(String productKey, String deviceName) {
+        thingService.post(
+                pluginInfo.getPluginId(),
+                fillAction(
+                        DevicePing.builder()
+                                .productKey(productKey)
+                                .deviceName(deviceName)
+                                .build()
+                )
+        );
     }
 
     private void offline(String productKey, String deviceName) {
