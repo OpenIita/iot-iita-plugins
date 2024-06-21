@@ -48,7 +48,17 @@ public class MqttDevice implements IDevice {
 
     @Override
     public ActionResult config(DeviceConfig action) {
-        return ActionResult.builder().code(0).reason("").build();
+        String topic = String.format("/sys/%s/%s/c/config/set", action.getProductKey(), action.getDeviceName());
+
+        return send(
+                topic,
+                action.getDeviceName(),
+                new JsonObject()
+                        .put("id", action.getId())
+                        .put("method", "thing.config.set")
+                        .put("params", action.getConfig())
+                        .toString()
+        );
     }
 
     @Override
