@@ -79,7 +79,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
      * 增加一个客户端连接clientid-连接状态池，避免mqtt关闭的时候走异常断开和mqtt断开的handler，导致多次离线消息
      */
     private static final Map<String, Boolean> MQTT_CONNECT_POOL = new ConcurrentHashMap<>();
-    private static final Map<String, Boolean> DEVICE_ONLINE = new ConcurrentHashMap<>();
 
     private MqttConfig config;
 
@@ -201,7 +200,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             }
             //下线
             offline(productKey, deviceName);
-            DEVICE_ONLINE.clear();
             //删除设备与连接关系
             endpointMap.remove(deviceName);
         }).disconnectMessageHandler(disconnectMessage -> {
@@ -214,7 +212,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             //删除设备与连接关系
             endpointMap.remove(deviceName);
             MQTT_CONNECT_POOL.put(clientId, false);
-            DEVICE_ONLINE.clear();
         }).pingHandler(msg->{
             // 心跳 ping
             ping(productKey,deviceName);
@@ -243,7 +240,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                 endpointMap.remove(device.getDeviceName());
                 //下线
                 offline(device.getProductKey(), device.getDeviceName());
-                DEVICE_ONLINE.remove(device.getDeviceName());
             }
 
             // ack the subscriptions request
@@ -267,9 +263,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
             if (device == null) {
                 return;
             }
-
-            //有消息上报-设备上线
-            online(device.getProductKey(), device.getDeviceName());
 
             if (!MQTT_CONNECT_POOL.get(clientId)) {
                 //保存设备与连接关系
@@ -360,9 +353,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
     }
 
     public void online(String pk, String dn) {
-        if (Boolean.TRUE.equals(DEVICE_ONLINE.get(dn))) {
-            return;
-        }
 
         //上线
         thingService.post(
@@ -374,7 +364,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
                         .build()
                 )
         );
-        DEVICE_ONLINE.put(dn, true);
     }
 
     /**
@@ -414,7 +403,6 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
 
             //下线
             offline(parts[0], parts[1]);
-            DEVICE_ONLINE.clear();
         }
         if(mqttServer!=null) {
             mqttServer.close();

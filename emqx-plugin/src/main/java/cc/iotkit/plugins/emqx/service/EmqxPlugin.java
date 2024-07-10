@@ -98,7 +98,6 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
 
     private boolean authServerStarted = false;
 
-    private static final Map<String, Boolean> DEVICE_ONLINE = new ConcurrentHashMap<>();
 
     public static final Map<String, Set<String>> CLIENT_DEVICE_MAP = new HashMap<>();
 
@@ -310,10 +309,6 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
     }
 
     public void online(String pk, String dn) {
-        if (Boolean.TRUE.equals(DEVICE_ONLINE.get(dn))) {
-            return;
-        }
-
         //上线
         thingService.post(
                 pluginInfo.getPluginId(),
@@ -324,7 +319,6 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
                         .build()
                 )
         );
-        DEVICE_ONLINE.put(dn, true);
     }
 
     public void offline(String clientId) {
@@ -342,7 +336,6 @@ public class EmqxPlugin implements PluginCloseListener, IPlugin, Runnable {
                             .build()
                     )
             );
-            DEVICE_ONLINE.remove(pkDn[1]);
         }
     }
 
