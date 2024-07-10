@@ -140,16 +140,15 @@ public class HttpVerticle extends AbstractVerticle implements Handler<RoutingCon
             }
 
             //设备上线
-            if (!DEVICE_ONLINE.contains(deviceName)) {
-                thingService.post(pluginInfo.getPluginId(), DeviceStateChange.builder()
-                        .id(UUID.randomUUID().toString())
-                        .productKey(productKey)
-                        .deviceName(deviceName)
-                        .state(DeviceState.ONLINE)
-                        .time(System.currentTimeMillis())
-                        .build());
-                DEVICE_ONLINE.add(deviceName);
-            }
+
+            thingService.post(pluginInfo.getPluginId(), DeviceStateChange.builder()
+                    .id(UUID.randomUUID().toString())
+                    .productKey(productKey)
+                    .deviceName(deviceName)
+                    .state(DeviceState.ONLINE)
+                    .time(System.currentTimeMillis())
+                    .build());
+
 
             String method = request.method().name();
             JsonObject payload = ctx.getBodyAsJson();
