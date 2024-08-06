@@ -191,18 +191,7 @@ public class MqttVerticle extends AbstractVerticle implements Handler<MqttEndpoi
 
         endpoint.accept(false);
 
-        endpoint.closeHandler((v) -> {
-            // 网络不好时也会出发,但是设备仍然可以发消息
-            log.warn("client connection closed,clientId:{}", clientId);
-            if (Boolean.FALSE.equals(MQTT_CONNECT_POOL.get(clientId))) {
-                MQTT_CONNECT_POOL.remove(clientId);
-                return;
-            }
-            //下线
-            offline(productKey, deviceName);
-            //删除设备与连接关系
-            endpointMap.remove(deviceName);
-        }).disconnectMessageHandler(disconnectMessage -> {
+        endpoint.disconnectMessageHandler(disconnectMessage -> {
             log.info("Received disconnect from client, reason code = {}", disconnectMessage.code());
             if (!MQTT_CONNECT_POOL.get(clientId)) {
                 return;
